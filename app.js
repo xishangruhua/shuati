@@ -27,6 +27,7 @@
   var store = loadStore();
   store.materials = store.materials || {};
   store.wrong = store.wrong || {};
+  store.resume = store.resume || {};
   function matState(k) {
     if (!store.materials[k]) store.materials[k] = { mastery: {}, scoreAvg: null, tests: 0, progress: 0 };
     var st = store.materials[k];
@@ -93,6 +94,19 @@
           '<div class="progress-text">进度 '+pct+'%</div>';
       }
       card.innerHTML = '<div class="mc-name">'+mat.title+'</div><div class="mc-meta">'+meta+'</div>';
+      // 复习记忆：显示上次位置
+      var rp = store.resume[mat.id];
+      if (rp !== undefined) {
+        var allCount = 0;
+        if (mat.sections) mat.sections.forEach(function(s){ allCount += s.questions.length; });
+        else allCount = mat.questions.length;
+        if (rp >= 0 && rp < allCount) {
+          var resumeTag = document.createElement("div");
+          resumeTag.className = "resume-tag";
+          resumeTag.textContent = "📌 上次看到第 " + (rp+1) + " / " + allCount + " 题";
+          card.appendChild(resumeTag);
+        }
+      }
       card.addEventListener("click", function(){ openMaterial(mat); });
       list.appendChild(card);
     });
@@ -200,7 +214,9 @@
 
   function startUnifiedReview(mat, qs) {
     buildTermChoices(qs);
-    session = { mode:"review", mid:mat.id, isWrongbook:false, list:qs, idx:0 };
+    var rp = store.resume[mat.id];
+    var startIdx = (rp !== undefined && rp >= 0 && rp < qs.length) ? rp : 0;
+    session = { mode:"review", mid:mat.id, isWrongbook:false, list:qs, idx:startIdx };
     show("quiz"); renderQuestion();
   }
   function startUnifiedTest(mat, qs) {
@@ -211,7 +227,9 @@
   function startOldReview(mat) {
     var qs = mat.questions.slice();
     if (mat.type==="term") buildTermChoices(qs);
-    session = { mode:"review", mid:mat.id, isWrongbook:false, list:qs, idx:0 };
+    var rp = store.resume[mat.id];
+    var startIdx = (rp !== undefined && rp >= 0 && rp < qs.length) ? rp : 0;
+    session = { mode:"review", mid:mat.id, isWrongbook:false, list:qs, idx:startIdx };
     show("quiz"); renderQuestion();
   }
   function startOldTest(mat, count) {
@@ -247,6 +265,12 @@
   function renderQuestion() {
     var q = session.list[session.idx];
     var qt = questionType(q);
+
+    // 复习模式：记忆当前位置
+    if (session.mode === "review" && !session.isWrongbook && session.mid) {
+      store.resume[session.mid] = session.idx;
+      saveStore(store);
+    }
 
     if (qt === "essay") {
       $("quiz-choice").classList.add("hidden"); $("quiz-essay").classList.remove("hidden");
@@ -326,6 +350,12 @@
   function updateNav() {
     $("prev-btn").disabled = session.idx === 0;
     $("next-btn").textContent = session.idx === session.list.length-1 ? "完成" : "下一道 →";
+    // 同步滑动条
+    var sl = $("question-slider");
+    sl.max = session.list.length;
+    sl.value = session.idx + 1;
+    $("slider-num-start").textContent = session.idx + 1;
+    $("slider-num-end").textContent = session.list.length;
   }
 
   // ---------- 作答 ----------
@@ -477,6 +507,15 @@
 
   // 老格式 slider
   $("count-slider").addEventListener("input",function(){ $("count-value").textContent=this.value; });
+
+  // 题号滑动条 — 跳转定位
+  $("question-slider").addEventListener("change",function(){
+    var idx = parseInt(this.value, 10) - 1;
+    if (session && idx >= 0 && idx < session.list.length) {
+      session.idx = idx;
+      renderQuestion();
+    }
+  });
 
   // 返回
   Array.prototype.forEach.call(document.querySelectorAll("[data-go]"),function(btn){
