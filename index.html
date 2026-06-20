@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>刷题</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 首页 -->
+    <section id="home" class="screen">
+      <h1 class="title">刷题</h1>
+      <p class="subtitle">祝谭美琪稳稳通过考试</p>
+      <h2 class="section-label">选择复习资料</h2>
+      <div id="material-list" class="material-list"></div>
+      <div id="wrongbook-entry" class="wrongbook-entry"></div>
+    </section>
+
+    <!-- 模式选择 -->
+    <section id="mode" class="screen hidden">
+      <button class="back" data-go="home">← 返回</button>
+      <div class="mode-center">
+        <h2 id="mode-title" class="mode-title"></h2>
+        <p class="mode-cheer" id="mode-cheer">加油呀！祝你稳稳过</p>
+        <div id="section-list-box" class="section-list" style="display:none"></div>
+        <div id="mode-buttons-box" class="mode-buttons">
+          <button class="mode-btn" data-mode="review">复习</button>
+          <button class="mode-btn" data-mode="test">测试</button>
+        </div>
+        <div id="multi-sliders" class="multi-sliders" style="display:none"></div>
+        <div id="test-setup" class="test-setup hidden">
+          <label class="slider-label">测试题数：<span id="count-value">20</span> 题 <span class="total-hint">/ 共 <span id="total-hint">0</span> 题</span></label>
+          <input type="range" id="count-slider" min="5" max="100" value="20" step="1">
+          <button id="start-test" class="primary-btn">开始测试</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 答题页 -->
+    <section id="quiz" class="screen hidden">
+      <div class="quiz-top">
+        <button class="back" data-go="home">← 返回</button>
+        <span id="quiz-progress" class="quiz-progress"></span>
+        <span id="quiz-score" class="quiz-score"></span>
+      </div>
+
+      <!-- 选择题/判断题/名词匹配 布局 -->
+      <div id="quiz-choice" class="quiz-body">
+        <div id="locate-hint" class="locate-hint"></div>
+        <div id="question-stem" class="question-stem"></div>
+        <div id="options" class="options"></div>
+        <div id="feedback" class="feedback"></div>
+        <div id="explanation" class="explanation"></div>
+      </div>
+
+      <!-- 问答题布局 -->
+      <div id="quiz-essay" class="quiz-body essay-layout hidden">
+        <div id="essay-stem" class="essay-stem"></div>
+        <button id="show-answer-btn" class="primary-btn show-answer-btn">显示答案</button>
+        <div id="essay-answer" class="essay-answer hidden"></div>
+        <button id="remember-btn" class="primary-btn remember-btn hidden">我已记住 ✓</button>
+      </div>
+
+      <div class="quiz-nav">
+        <button id="prev-btn" class="nav-btn">← 上一道</button>
+        <button id="submit-btn" class="primary-btn hidden">提交</button>
+        <button id="next-btn" class="nav-btn">下一道 →</button>
+      </div>
+    </section>
+
+    <!-- 测试结果页 -->
+    <section id="result" class="screen hidden">
+      <h2 class="section-label">测试结束</h2>
+      <div id="result-score" class="result-score"></div>
+      <div id="result-detail" class="result-detail"></div>
+      <div class="mode-buttons">
+        <button class="primary-btn" data-go="home">回首页</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
