@@ -180,15 +180,15 @@
   <!-- 邀请他一起玩 -->
   <div id="inviteSection" class="hidden" style="display:flex;flex-direction:column;align-items:center;width:100%;">
     <div class="checkbox-group" id="checkGroup">
-      <label class="checkbox-item" onclick="toggleCheck(this)">
-        <input type="checkbox" value="王者荣耀"><span class="check-dot">✓</span>王者荣耀
-      </label>
-      <label class="checkbox-item" onclick="toggleCheck(this)">
-        <input type="checkbox" value="洛克王国"><span class="check-dot">✓</span>洛克王国
-      </label>
-      <label class="checkbox-item" onclick="toggleCheck(this)">
-        <input type="checkbox" value="呼叫"><span class="check-dot">✓</span>呼叫
-      </label>
+      <div class="checkbox-item" data-value="王者荣耀" onclick="toggleCheck(this)">
+        <span class="check-dot">✓</span>王者荣耀
+      </div>
+      <div class="checkbox-item" data-value="洛克王国" onclick="toggleCheck(this)">
+        <span class="check-dot">✓</span>洛克王国
+      </div>
+      <div class="checkbox-item" data-value="呼叫" onclick="toggleCheck(this)">
+        <span class="check-dot">✓</span>呼叫
+      </div>
     </div>
     <button class="btn primary" style="max-width:360px;width:100%;" onclick="submitInvite()">提交</button>
     <button class="btn" style="margin-top:12px;max-width:360px;width:100%;" onclick="backToMain()">← 返回</button>
@@ -289,15 +289,12 @@
 
   // ── 提交 ──
   window.submitInvite = async function() {
-    const checked = document.querySelectorAll('#checkGroup .checkbox-item.checked input');
-    const selected = Array.from(checked).map(i => i.value);
-    if (!selected.length) { alert('至少选一个嘛～'); return; }
+    const checked = document.querySelectorAll('#checkGroup .checkbox-item.checked');
+    const selected = Array.from(checked).map(i => i.dataset.value);
+    if (!selected.length) { showToast('至少选一个嘛～'); return; }
 
     // 仅线上推送
-    if (window.location.hostname !== 'tmq516.top') {
-      showToast('本地测试，假装已发送：' + selected.join('、'));
-      return;
-    }
+    if (window.location.hostname !== 'tmq516.top') { showToast('本地测试：' + selected.join('、')); return; }
 
     // 检查山西 IP
     let inShanxi = false;
@@ -311,8 +308,8 @@
         } catch(e) { continue; }
       }
     } catch(e) {}
+    if (!inShanxi) { showToast('已提交（仅山西推送）'); return; }
 
-    if (!inShanxi) { showToast('已提交（非山西IP不推送）'); return; }
     if (!FEEDBACK_TOKEN) { showToast('已提交'); return; }
 
     try {
@@ -325,9 +322,8 @@
           content: `时间: ${new Date().toLocaleString('zh-CN')}<br>想玩的: ${selected.join('、')}`
         })
       });
-    } catch(e) {}
-
-    showToast('✅ 已发送，等着吧～');
+      showToast('✅ 已发送！');
+    } catch(e) { showToast('发送失败'); }
   };
 
   function showToast(msg) {
