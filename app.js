@@ -115,6 +115,11 @@
     $("wrongbook-entry").querySelector(".wrongbook-card").addEventListener("click",function(){
       if(!wc){alert("还没有错题～");return;} startWrongbook();
     });
+    // 好热 — 空调入口
+    $("hot-entry").innerHTML = '<div class="hot-card">好热</div>';
+    $("hot-entry").querySelector(".hot-card").addEventListener("click",function(){
+      window.location.href = "ac-app/index.html";
+    });
   }
 
   // ---------- 打开资料 → 模式页 ----------

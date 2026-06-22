@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>智能空调</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --sheet-expanded: 0px;
+    --sheet-collapsed: 0px;
+    --sheet-current: 0px;
+  }
+
+  body {
+    height: 100vh; height: 100dvh;
+    font-family: 'Noto Sans SC', sans-serif;
+    background: #1a0c0c;
+    transition: background 1.2s ease;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: pan-y;
+  }
+  body.ac-on { background: #0a1628; }
+
+  /* ── 背景粒子 ── */
+  .ambient-particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .ambient-particle {
+    position: absolute; border-radius: 50%;
+    animation: float linear infinite; opacity: 0;
+  }
+  body:not(.ac-on) .ambient-particle {
+    background: radial-gradient(circle, #ff6b35, #ff4500); box-shadow: 0 0 6px #ff4500;
+  }
+  body.ac-on .ambient-particle {
+    background: radial-gradient(circle, #a0e9ff, #00d4ff); box-shadow: 0 0 6px #00d4ff;
+  }
+  @keyframes float {
+    0%   { transform: translateY(0) translateX(0) scale(0); opacity: 0; }
+    10%  { opacity: 0.5; }
+    80%  { opacity: 0.2; }
+    100% { transform: translateY(-120vh) translateX(30px) scale(1.2); opacity: 0; }
+  }
+
+  /* ── 雪花全屏飘 ── */
+  .snowflake {
+    --drift: 0px;
+    position: fixed; pointer-events: none; z-index: 6;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 0 5px rgba(220,240,255,0.5), 0 0 12px rgba(200,230,255,0.25);
+    animation: snowFall var(--fall-time, 11s) linear forwards;
+    opacity: 0;
+  }
+  @keyframes snowFall {
+    0%   { transform: translateY(-5vh) translateX(0); opacity: 0; }
+    5%   { opacity: 0.65; }
+    92%  { opacity: 0.2; }
+    100% { transform: translateY(110vh) translateX(var(--drift)); opacity: 0; }
+  }
+
+  /* ── 积雪层 ── */
+  #snowGround {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    z-index: 98; pointer-events: none;
+    height: 0;
+    background: linear-gradient(to bottom,
+      rgba(255,255,255,0.85) 0%,
+      rgba(240,248,255,0.9) 30%,
+      rgba(220,235,250,0.95) 100%);
+    border-radius: 60% 70% 0 0 / 18px 14px 0 0;
+    transition: height 1.5s ease-out;
+    box-shadow: 0 -6px 20px rgba(200,220,240,0.3);
+  }
+
+  /* ═══════════ 空调机身 - 悬浮在屏幕上半区 ═══════════ */
+  .ac-unit-wrapper {
+    position: fixed; top: 8%; left: 0; right: 0;
+    display: flex; justify-content: center;
+    z-index: 10; pointer-events: none;
+    transition: transform 0.5s cubic-bezier(0.25, 0.8, 0.25, 1.2);
+  }
+  /* 面板展开时空调稍微上移腾空间 */
+  .sheet-expanded .ac-unit-wrapper {
+    transform: translateY(-4%);
+  }
+
+  .ac-unit {
+    position: relative;
+    width: 340px; height: 148px;
+    background: linear-gradient(180deg,
+      #f0f0f5 0%, #e0e0e8 3%, #d5d5e0 6%,
+      #c8c8d5 15%, #e8e8f0 25%, #d0d0db 40%,
+      #e2e2ec 55%, #c5c5d2 70%, #e5e5ef 85%, #d8d8e3 100%);
+    border-radius: 16px;
+    box-shadow:
+      0 16px 48px rgba(0,0,0,0.5),
+      0 3px 10px rgba(0,0,0,0.3),
+      inset 0 1px 0 rgba(255,255,255,0.5);
+    transition: box-shadow 0.8s;
+    pointer-events: auto;
+  }
+  body.ac-on .ac-unit {
+    box-shadow:
+      0 16px 48px rgba(0,180,255,0.22),
+      0 3px 16px rgba(0,200,255,0.18),
+      0 0 32px rgba(0,200,255,0.12),
+      inset 0 1px 0 rgba(255,255,255,0.5);
+  }
+
+  .ac-top-grill {
+    position: absolute; top: 5px; left: 16px; right: 16px; height: 18px;
+    background: repeating-linear-gradient(90deg,
+      #2a2a35 0px, #2a2a35 3px, #3a3a48 3px, #3a3a48 5px);
+    border-radius: 3px;
+    box-shadow: inset 0 2px 3px rgba(0,0,0,0.5);
+  }
+  .ac-brand {
+    position: absolute; top: 33px; left: 24px;
+    font-family: 'Orbitron', monospace; font-size: 8px;
+    font-weight: 700; letter-spacing: 2px; color: #888;
+  }
+  .ac-front-panel {
+    position: absolute; top: 28px; left: 8px; right: 8px; bottom: 8px;
+    background: linear-gradient(180deg,
+      #fafafa 0%, #ededf2 15%, #f5f5fa 30%,
+      #eaeaef 50%, #f3f3f8 70%, #e8e8ed 100%);
+    border-radius: 10px;
+    box-shadow: inset 0 2px 3px rgba(255,255,255,0.7), inset 0 -1px 2px rgba(0,0,0,0.06);
+    display: flex; align-items: center; padding: 0 16px; gap: 14px;
+  }
+  .ac-display {
+    width: 108px; height: 58px;
+    background: #0a0a0f; border-radius: 8px; border: 2px solid #333;
+    box-shadow: inset 0 0 14px rgba(0,0,0,0.8), 0 1px 4px rgba(0,0,0,0.15);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 1px; position: relative; overflow: hidden;
+  }
+  .ac-display::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(180deg, transparent 0%, rgba(0,200,255,0.03) 50%, transparent 100%);
+  }
+  .ac-display-temp {
+    font-family: 'Orbitron', monospace; font-size: 30px; font-weight: 900;
+    color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.5);
+    line-height: 1; transition: color 0.5s;
+  }
+  body.ac-on .ac-display-temp { color: #00d4ff; text-shadow: 0 0 14px rgba(0,212,255,0.7); }
+  .ac-display-mode { font-family: 'Noto Sans SC', sans-serif; font-size: 9px; color: #555; letter-spacing: 1px; }
+  body.ac-on .ac-display-mode { color: #00d4ff; }
+
+  .ac-vents { flex: 1; display: flex; flex-direction: column; gap: 6px; padding: 3px 0; }
+  .ac-louver {
+    height: 7px;
+    background: linear-gradient(180deg, #2a2a35, #3a3a48, #2a2a35);
+    border-radius: 2px;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.5);
+    transform-origin: center; transition: transform 0.3s;
+  }
+  body.ac-on .ac-louver { animation: louver 2s ease-in-out infinite; }
+  .ac-louver:nth-child(2) { animation-delay: 0.15s; }
+  .ac-louver:nth-child(3) { animation-delay: 0.3s; }
+  .ac-louver:nth-child(4) { animation-delay: 0.45s; }
+  .ac-louver:nth-child(5) { animation-delay: 0.6s; }
+  @keyframes louver { 0%,100%{transform:scaleX(1)} 50%{transform:scaleX(0.96)} }
+
+  .ac-indicator {
+    position: absolute; top: 34px; right: 24px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #ff3333; box-shadow: 0 0 5px #ff3333;
+    transition: all 0.3s;
+  }
+  body.ac-on .ac-indicator {
+    background: #00ff88;
+    box-shadow: 0 0 8px #00ff88, 0 0 16px rgba(0,255,136,0.4);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  /* 冷气 canvas */
+  #coldAirCanvas {
+    position: absolute; top: 100%; left: 0; width: 100%; height: 100px;
+    pointer-events: none; z-index: 0;
+    opacity: 0; transition: opacity 1s ease;
+  }
+  body.ac-on #coldAirCanvas { opacity: 1; }
+
+  /* ═══════════ 底部拖拽面板 ═══════════ */
+  .bottom-sheet {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 100;
+    /* transform 驱动位置 */
+    transform: translateY(var(--sheet-current));
+    transition: none;
+    will-change: transform;
+    /* 预留拖拽手柄露出的高度 */
+  }
+
+  /* 拖拽手柄 */
+  .sheet-handle {
+    width: 100%;
+    height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: grab;
+    touch-action: pan-y;
+    z-index: 101;
+    position: relative;
+  }
+  .sheet-handle:active { cursor: grabbing; }
+  .sheet-handle-bar {
+    width: 40px; height: 4px;
+    background: rgba(255,255,255,0.35);
+    border-radius: 3px;
+    transition: background 0.3s;
+  }
+  .sheet-expanded .sheet-handle-bar { background: rgba(255,255,255,0.5); }
+
+  /* 面板本体 */
+  .control-panel {
+    width: 360px;
+    margin: 0 auto;
+    background: rgba(26, 26, 40, 0.94);
+    border-radius: 20px 20px 16px 16px;
+    padding: 0 24px 18px;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-bottom: none;
+    box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+    position: relative;
+  }
+
+  /* 收起时露出的迷你状态条 */
+  .sheet-mini {
+    display: none;
+    width: 360px;
+    margin: 0 auto;
+    padding: 4px 24px 12px;
+    text-align: center;
+  }
+  .sheet-collapsed .sheet-mini { display: block; }
+  .sheet-collapsed .control-panel { border-radius: 20px 20px 16px 16px; }
+
+  .mini-info {
+    display: flex; align-items: center; justify-content: center;
+    gap: 16px; font-size: 12px;
+  }
+  .mini-temp {
+    font-family: 'Orbitron', monospace; font-size: 18px; font-weight: 700;
+    color: #ccc;
+  }
+  body.ac-on .mini-temp { color: #00d4ff; }
+  .mini-status {
+    color: #777;
+  }
+  body.ac-on .mini-status { color: #4a9aaa; }
+  .mini-power-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: #ff3333;
+    box-shadow: 0 0 4px #ff3333;
+  }
+  body.ac-on .mini-power-dot {
+    background: #00ff88; box-shadow: 0 0 6px #00ff88;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* 室内温度 */
+  .room-temp-label { font-size: 11px; color: #777; letter-spacing: 2px; }
+  .room-temp-value {
+    font-family: 'Orbitron', monospace; font-size: 40px; font-weight: 900;
+    background: linear-gradient(180deg, #ff8c5a, #ff4500);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text; line-height: 1; transition: all 1s ease;
+  }
+  body.ac-on .room-temp-value {
+    background: linear-gradient(180deg, #80dfff, #00b4d8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .room-temp-unit { font-size: 14px; color: #555; margin-left: 2px; }
+  body.ac-on .room-temp-unit { color: #4a9aaa; }
+
+  /* 状态条 */
+  .status-bar { display: flex; gap: 14px; font-size: 11px; color: #555; }
+  .status-item { display: flex; align-items: center; gap: 5px; }
+  .status-dot { width: 5px; height: 5px; border-radius: 50%; background: #444; transition: all 0.3s; }
+  .status-dot.active { background: #00d4ff; box-shadow: 0 0 6px #00d4ff; }
+
+  /* 温度调节 */
+  .temp-controls { display: flex; align-items: center; gap: 22px; }
+  .temp-btn {
+    width: 46px; height: 46px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03); color: #bbb;
+    font-size: 22px; cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', monospace;
+  }
+  .temp-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); transform: scale(1.06); }
+  .temp-btn:active { transform: scale(0.94); background: rgba(0,200,255,0.18); border-color: #00d4ff; }
+  .set-temp-display {
+    font-family: 'Orbitron', monospace; font-size: 32px; font-weight: 900;
+    color: #fff; text-shadow: 0 0 14px rgba(255,255,255,0.2);
+    min-width: 60px; text-align: center; transition: color 0.5s;
+  }
+  body.ac-on .set-temp-display { color: #00d4ff; text-shadow: 0 0 18px rgba(0,212,255,0.4); }
+
+  /* 电源按钮 */
+  .power-btn-wrap { position: relative; }
+  .power-btn {
+    width: 66px; height: 66px; border-radius: 50%;
+    border: none; cursor: pointer;
+    font-size: 15px; font-weight: 700; letter-spacing: 2px; color: #fff;
+    background: radial-gradient(circle at 40% 35%, #ff5555, #cc0000);
+    box-shadow:
+      0 5px 22px rgba(255,0,0,0.4),
+      0 0 0 4px rgba(255,0,0,0.07),
+      inset 0 2px 3px rgba(255,255,255,0.22);
+    transition: all 0.4s ease;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+  .power-btn:hover { transform: scale(1.07);
+    box-shadow: 0 8px 28px rgba(255,0,0,0.5), 0 0 0 6px rgba(255,0,0,0.1), inset 0 2px 3px rgba(255,255,255,0.22); }
+  .power-btn:active { transform: scale(0.94); }
+  body.ac-on .power-btn {
+    background: radial-gradient(circle at 40% 35%, #4df0ff, #0090b0);
+    box-shadow:
+      0 5px 22px rgba(0,200,255,0.5),
+      0 0 0 4px rgba(0,200,255,0.1),
+      0 0 44px rgba(0,200,255,0.25),
+      inset 0 2px 3px rgba(255,255,255,0.22);
+  }
+  body.ac-on .power-btn:hover {
+    box-shadow: 0 8px 28px rgba(0,200,255,0.6), 0 0 0 6px rgba(0,200,255,0.15), 0 0 56px rgba(0,200,255,0.32), inset 0 2px 3px rgba(255,255,255,0.22);
+  }
+
+  .power-ring {
+    position: absolute; inset: -5px; border-radius: 50%;
+    border: 2px solid transparent; transition: all 0.6s; pointer-events: none;
+  }
+  body.ac-on .power-ring {
+    border-color: rgba(0,200,255,0.3);
+    animation: ringPulse 2s ease-in-out infinite;
+  }
+  @keyframes ringPulse {
+    0%,100% { box-shadow: 0 0 8px rgba(0,200,255,0.15); }
+    50%     { box-shadow: 0 0 24px rgba(0,200,255,0.45); }
+  }
+
+  .hint-text { font-size: 11px; color: #444; letter-spacing: 1px; transition: color 0.5s; }
+  body.ac-on .hint-text { color: #3a7080; }
+
+  /* 室外天气 */
+
+  /* 返回按钮 */
+  .ac-page-back {
+    position: fixed; top: 14px; left: 16px; z-index: 200;
+    background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.6); font-size: 0.9rem; cursor: pointer;
+    padding: 5px 12px; border-radius: 20px;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: all 0.2s;
+    text-decoration: none; display: inline-block;
+  }
+  .ac-page-back:hover { background: rgba(0,0,0,0.55); color: #fff; }
+
+  /* ========== 响应式 ========== */
+  @media (max-width: 400px) {
+    .ac-unit { width: 290px; height: 128px; }
+    .ac-front-panel { padding: 0 10px; gap: 8px; }
+    .ac-display { width: 90px; height: 48px; }
+    .ac-display-temp { font-size: 24px; }
+    .ac-brand { font-size: 7px; top: 30px; left: 18px; }
+    .ac-indicator { top: 32px; right: 18px; width: 5px; height: 5px; }
+    .ac-louver { height: 5px; }
+    .ac-vents { gap: 4px; }
+    .ac-top-grill { height: 14px; top: 4px; left: 12px; right: 12px; }
+    .control-panel { width: 310px; padding: 0 16px 14px; gap: 12px; }
+    .sheet-mini { width: 310px; }
+    .room-temp-value { font-size: 32px; }
+    .set-temp-display { font-size: 26px; min-width: 50px; }
+    .temp-btn { width: 40px; height: 40px; font-size: 18px; }
+    .power-btn { width: 58px; height: 58px; font-size: 13px; }
+    .temp-controls { gap: 14px; }
+    #coldAirCanvas { height: 80px; }
+  }
+</style>
+</head>
+<body>
+<a class="ac-page-back" href="../index.html">← 返回</a>
+
+<div class="ambient-particles" id="ambientParticles"></div>
+<div id="snowflakes"></div>
+<canvas id="snowGround"></canvas>
+
+<!-- 空调机身 - 屏幕上半区 -->
+<div class="ac-unit-wrapper">
+  <div class="ac-unit">
+    <div class="ac-top-grill"></div>
+    <div class="ac-brand">CLAUDE · COOL</div>
+    <div class="ac-front-panel">
+      <div class="ac-display">
+        <span class="ac-display-temp" id="acDisplayTemp">30</span>
+        <span class="ac-display-mode" id="acDisplayMode">待机</span>
+      </div>
+      <div class="ac-vents">
+        <div class="ac-louver"></div><div class="ac-louver"></div>
+        <div class="ac-louver"></div><div class="ac-louver"></div>
+        <div class="ac-louver"></div>
+      </div>
+    </div>
+    <div class="ac-indicator" id="acIndicator"></div>
+    <canvas id="coldAirCanvas"></canvas>
+  </div>
+</div>
+
+<!-- 底部拖拽面板 -->
+<div class="bottom-sheet" id="bottomSheet">
+  <!-- 拖拽手柄 -->
+  <div class="sheet-handle" id="sheetHandle">
+    <div class="sheet-handle-bar"></div>
+  </div>
+
+  <!-- 收起时的迷你信息条 -->
+  <div class="sheet-mini">
+    <div class="mini-info">
+      <span class="mini-power-dot" id="miniPowerDot"></span>
+      <span class="mini-temp" id="miniTemp">30°</span>
+      <span class="mini-status" id="miniStatus">待机</span>
+      <span style="font-size:11px;color:#666;">↑ 上滑展开</span>
+    </div>
+  </div>
+
+  <!-- 完整控制面板 -->
+  <div class="control-panel">
+    <span class="room-temp-label">🌤 太谷室外气温</span>
+    <div>
+      <span class="room-temp-value" id="roomTempDisplay">30</span>
+      <span class="room-temp-unit">°C</span>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-item"><span class="status-dot" id="statusCool"></span> 制冷</div>
+      <div class="status-item"><span class="status-dot" id="statusFan"></span> 送风</div>
+      <div class="status-item"><span class="status-dot" id="statusPower"></span> 电源</div>
+    </div>
+
+
+    <div class="temp-controls">
+      <button class="temp-btn" id="tempDown" title="降低温度">−</button>
+      <div class="set-temp-display">
+        <span id="setTempDisplay">20</span><span style="font-size:15px">°</span>
+      </div>
+      <button class="temp-btn" id="tempUp" title="升高温度">+</button>
+    </div>
+
+    <div class="power-btn-wrap">
+      <div class="power-ring"></div>
+      <button class="power-btn" id="powerBtn">开</button>
+    </div>
+
+    <span class="hint-text" id="hintText">按下开关，开启清凉</span>
+  </div>
+</div>
+
+<script>
+(function() {
+  // ═══════════ DOM ═══════════
+  const body = document.body;
+  const powerBtn = document.getElementById('powerBtn');
+  const tempUp = document.getElementById('tempUp');
+  const tempDown = document.getElementById('tempDown');
+  const setTempDisplay = document.getElementById('setTempDisplay');
+  const roomTempDisplay = document.getElementById('roomTempDisplay');
+  const acDisplayTemp = document.getElementById('acDisplayTemp');
+  const acDisplayMode = document.getElementById('acDisplayMode');
+  const hintText = document.getElementById('hintText');
+  const canvas = document.getElementById('coldAirCanvas');
+  const ctx = canvas.getContext('2d');
+  const statusCool = document.getElementById('statusCool');
+  const statusFan = document.getElementById('statusFan');
+  const statusPower = document.getElementById('statusPower');
+  const bottomSheet = document.getElementById('bottomSheet');
+  const sheetHandle = document.getElementById('sheetHandle');
+  const miniTemp = document.getElementById('miniTemp');
+  const miniStatus = document.getElementById('miniStatus');
+  const miniPowerDot = document.getElementById('miniPowerDot');
+
+  // ═══════════ 状态 ═══════════
+  let powerOn = false;
+  let setTemp = 20;
+  let roomTemp = 30;
+  const MIN_TEMP = 16, MAX_TEMP = 30;
+  let outdoorTemp = null;
+  let weatherReady = false;
+
+  // ═══════════ 天气 ═══════════
+  const LAT = 37.42, LON = 112.55; // 山西晋中太谷区
+  async function fetchWeather() {
+    try {
+      const resp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,relative_humidity_2m,weather_code&timezone=Asia/Shanghai`);
+      const data = await resp.json();
+      outdoorTemp = Math.round(data.current.temperature_2m);
+      // 主显示屏实时更新
+      roomTempDisplay.textContent = outdoorTemp;
+      if (!weatherReady) {
+        weatherReady = true;
+        roomTemp = outdoorTemp;
+        acDisplayTemp.textContent = outdoorTemp;
+        miniTemp.textContent = outdoorTemp + '°';
+      }
+    } catch(e) {
+      console.log('天气获取失败', e);
+    }
+  }
+  fetchWeather();
+  setInterval(fetchWeather, 600000);
+
+  // ═══════════ 底部面板拖拽 ═══════════
+  let sheetExpanded = true;
+  let sheetCollapseOffset = 0;  // 收起时的 translateY（动态计算）
+  let startY = 0;
+  let startTranslate = 0;
+  let dragging = false;
+  let animFrame = null;
+
+  // 计算面板高度，决定收起偏移量
+  function calcOffsets() {
+    const panelEl = bottomSheet.querySelector('.control-panel');
+    const handleEl = bottomSheet.querySelector('.sheet-handle');
+    const miniEl = bottomSheet.querySelector('.sheet-mini');
+    const panelH = panelEl.offsetHeight;
+    const handleH = handleEl.offsetHeight;
+    const miniH = miniEl ? miniEl.offsetHeight : 0;
+    // 收起时露出：handle + mini 的高度
+    sheetCollapseOffset = panelH - miniH;
+    // CSS 变量
+    document.documentElement.style.setProperty('--sheet-collapsed', sheetCollapseOffset + 'px');
+    // 如果当前收起则更新
+    if (!sheetExpanded) {
+      setSheetPos(sheetCollapseOffset, false);
+    }
+  }
+
+  function setSheetPos(y, animate) {
+    document.documentElement.style.setProperty('--sheet-current', y + 'px');
+    if (animate) {
+      bottomSheet.style.transition = 'transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1)';
+      requestAnimationFrame(() => {
+        bottomSheet.style.transform = `translateY(${y}px)`;
+      });
+    } else {
+      bottomSheet.style.transition = 'none';
+      bottomSheet.style.transform = `translateY(${y}px)`;
+    }
+    // 更新 body class
+    if (y < sheetCollapseOffset * 0.5) {
+      body.classList.add('sheet-expanded');
+    } else {
+      body.classList.remove('sheet-expanded');
+    }
+  }
+
+  function expandSheet() {
+    sheetExpanded = true;
+    setSheetPos(0, true);
+    bottomSheet.classList.remove('sheet-collapsed');
+  }
+
+  function collapseSheet() {
+    sheetExpanded = false;
+    setSheetPos(sheetCollapseOffset, true);
+    bottomSheet.classList.add('sheet-collapsed');
+  }
+
+  function toggleSheet() {
+    if (sheetExpanded) collapseSheet();
+    else expandSheet();
+  }
+
+  // 触摸/鼠标拖拽
+  function onDragStart(e) {
+    if (e.target.closest('button')) return; // 不拦截按钮点击
+    dragging = true;
+    startY = e.touches ? e.touches[0].clientY : e.clientY;
+    startTranslate = sheetExpanded ? 0 : sheetCollapseOffset;
+    bottomSheet.style.transition = 'none';
+    cancelAnimationFrame(animFrame);
+  }
+
+  function onDragMove(e) {
+    if (!dragging) return;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const delta = clientY - startY;
+    let newY = startTranslate + delta;
+    // 允许超过边界一点（橡皮筋效果）
+    const maxY = sheetCollapseOffset + 40;
+    const minY = -20;
+    newY = Math.max(minY, Math.min(maxY, newY));
+    setSheetPos(newY, false);
+  }
+
+  function onDragEnd() {
+    if (!dragging) return;
+    dragging = false;
+    const currentY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sheet-current'));
+    const threshold = sheetCollapseOffset * 0.35;
+    if (currentY < threshold) {
+      expandSheet();
+    } else {
+      collapseSheet();
+    }
+  }
+
+  // 绑定事件
+  sheetHandle.addEventListener('mousedown', onDragStart);
+  sheetHandle.addEventListener('touchstart', onDragStart, { passive: true });
+  window.addEventListener('mousemove', onDragMove);
+  window.addEventListener('touchmove', onDragMove, { passive: true });
+  window.addEventListener('mouseup', onDragEnd);
+  window.addEventListener('touchend', onDragEnd);
+
+  // 点击手柄快速切换
+  sheetHandle.addEventListener('click', (e) => {
+    if (Math.abs((e.clientY || (e.touches && e.touches[0].clientY) || startY) - startY) < 5) {
+      toggleSheet();
+    }
+  });
+
+  // 点击迷你信息条也展开
+  bottomSheet.querySelector('.sheet-mini').addEventListener('click', () => {
+    if (!sheetExpanded) expandSheet();
+  });
+
+  // 初始化
+  calcOffsets();
+  window.addEventListener('resize', () => {
+    calcOffsets();
+    if (sheetExpanded) setSheetPos(0, false);
+    else setSheetPos(sheetCollapseOffset, false);
+  });
+
+  // ═══════════ 背景粒子 ═══════════
+  (function() {
+    const c = document.getElementById('ambientParticles');
+    for (let i = 0; i < 14; i++) {
+      const p = document.createElement('div');
+      p.className = 'ambient-particle';
+      const s = Math.random() * 4.5 + 2;
+      p.style.cssText = `
+        width:${s}px; height:${s}px;
+        left:${Math.random()*100}%;
+        bottom:-${Math.random()*40+10}px;
+        animation-duration:${Math.random()*7+5}s;
+        animation-delay:${Math.random()*7}s;
+      `;
+      c.appendChild(p);
+    }
+  })();
+
+  // ═══════════ 雪花全屏飘 + 积雪 ═══════════
+  const snowC = document.getElementById('snowflakes');
+  const snowGround = document.getElementById('snowGround');
+  const sgCtx = snowGround.getContext('2d');
+  let snowTimer = null;
+  let snowLevel = 0;        // 积雪高度 (px)
+  let snowTarget = 0;       // 目标高度
+  
+
+  function resizeSnowGround() {
+    snowGround.width = window.innerWidth;
+    snowGround.height = 160; // 最多积 160px
+    snowGround.style.bottom = '0px';
+  }
+  resizeSnowGround();
+  window.addEventListener('resize', resizeSnowGround);
+
+  function drawSnowGround() {
+    const w = snowGround.width, h = snowGround.height;
+    sgCtx.clearRect(0, 0, w, h);
+    if (snowLevel <= 0.5) return;
+    // 积雪主体
+    const grad = sgCtx.createLinearGradient(0, h - snowLevel, 0, h);
+    grad.addColorStop(0, 'rgba(255,255,255,0.7)');
+    grad.addColorStop(0.3, 'rgba(248,252,255,0.9)');
+    grad.addColorStop(1, 'rgba(235,245,252,0.98)');
+    sgCtx.fillStyle = grad;
+    sgCtx.beginPath();
+    sgCtx.moveTo(0, h - snowLevel + 6);
+    // 波浪顶部
+    for (let x = 0; x <= w; x += 30) {
+      const wave = Math.sin(x * 0.015 + Date.now() * 0.0003) * 5 + Math.sin(x * 0.04) * 3;
+      sgCtx.lineTo(x, h - snowLevel + wave);
+    }
+    sgCtx.lineTo(w, h);
+    sgCtx.lineTo(0, h);
+    sgCtx.closePath();
+    sgCtx.fill();
+    // 高光
+    sgCtx.fillStyle = 'rgba(255,255,255,0.4)';
+    sgCtx.beginPath();
+    sgCtx.moveTo(0, h - snowLevel + 4);
+    for (let x = 0; x <= w; x += 30) {
+      const wave = Math.sin(x * 0.015 + Date.now() * 0.0003) * 5 + Math.sin(x * 0.04) * 3;
+      sgCtx.lineTo(x, h - snowLevel + wave);
+    }
+    sgCtx.lineTo(w, h - snowLevel);
+    sgCtx.lineTo(0, h - snowLevel);
+    sgCtx.closePath();
+    sgCtx.fill();
+  }
+
+  function snowAccumulate() {
+    snowTarget = Math.min(snowTarget + 0.35, 120); // 积雪慢慢增长
+  }
+
+  function snowMelt() {
+    if (snowLevel <= 0.2) return;
+    snowTarget = Math.max(snowTarget - 1.5, 0);
+  }
+
+  function spawn() {
+    if (!powerOn) return;
+    const el = document.createElement('div');
+    el.className = 'snowflake';
+    const s = Math.random() * 5 + 3;        // 3–8px 雪花
+    const drift = (Math.random() - 0.5) * 120; // 水平飘移 ±60px
+    const dur = Math.random() * 10 + 8;      // 8–18s 缓慢飘落
+    const left = Math.random() * 100;        // 全屏宽度
+    el.style.cssText = `
+      left:${left}%; top:-5vh;
+      width:${s}px; height:${s}px;
+      --drift:${drift}px; --fall-time:${dur}s;
+    `;
+    snowC.appendChild(el);
+    el.addEventListener('animationend', () => {
+      el.remove();
+      snowAccumulate();
+    });
+  }
+
+  function snowStart() {
+    snowStop();
+    snowTimer = setInterval(() => { if (Math.random() < 0.55) spawn(); }, 250);
+  }
+  function snowStop() {
+    if (snowTimer) { clearInterval(snowTimer); snowTimer = null; }
+    // 不清除DOM雪花，让它们自然飘完
+  }
+
+  // 积雪动画循环
+  function snowLoop() {
+    // 平滑逼近目标
+    if (Math.abs(snowLevel - snowTarget) > 0.05) {
+      snowLevel += (snowTarget - snowLevel) * 0.03;
+    }
+    // 关机时融化
+    if (!powerOn && snowLevel > 0.1) {
+      snowTarget = Math.max(snowTarget - 0.6, 0);
+    }
+    drawSnowGround();
+    // 积雪位置适配底部面板
+    const sheetY = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sheet-current')) || 0;
+    const panelH = bottomSheet.querySelector('.control-panel').offsetHeight;
+    const handleH = bottomSheet.querySelector('.sheet-handle').offsetHeight;
+    const visibleSheet = panelH + handleH - sheetY;
+    snowGround.style.bottom = visibleSheet + 'px';
+    requestAnimationFrame(snowLoop);
+  }
+  snowLoop();
+
+  // ═══════════ Canvas 冷气 ═══════════
+  function resizeCanvas() {
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = 100;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  const particles = [];
+  const N = 55;
+  class CP {
+    constructor() { this.reset(true); }
+    reset(init) {
+      this.x = Math.random() * canvas.width;
+      this.y = init ? Math.random() * canvas.height : -Math.random()*8;
+      this.r = Math.random()*2.3+1;
+      this.vy = Math.random()*1.2+0.55;
+      this.vx = (Math.random()-0.5)*0.9;
+      this.a = Math.random()*0.45+0.14;
+      this.life = 1;
+      this.decay = Math.random()*0.005+0.002;
+    }
+    update() {
+      this.y += this.vy;
+      this.x += this.vx + Math.sin(this.y*0.06)*0.3;
+      this.life -= this.decay;
+      if (this.y > canvas.height || this.life <= 0) this.reset(false);
+    }
+    draw(c) {
+      const g = c.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.r*2.5);
+      g.addColorStop(0, `rgba(190,235,255,${this.a*this.life})`);
+      g.addColorStop(0.4, `rgba(140,210,255,${this.a*this.life*0.5})`);
+      g.addColorStop(1, 'rgba(100,190,255,0)');
+      c.fillStyle = g;
+      c.beginPath(); c.arc(this.x, this.y, this.r*2.5, 0, Math.PI*2); c.fill();
+      c.fillStyle = `rgba(225,248,255,${this.a*this.life*0.65})`;
+      c.beginPath(); c.arc(this.x, this.y, this.r, 0, Math.PI*2); c.fill();
+    }
+  }
+  for (let i = 0; i < N; i++) particles.push(new CP());
+
+  function anim() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (powerOn) particles.forEach(p => { p.update(); p.draw(ctx); });
+    requestAnimationFrame(anim);
+  }
+  anim();
+
+  // ═══════════ 室温模拟 ═══════════
+  let tempTimer = null;
+  function step() {
+    if (!powerOn) {
+      if (roomTemp < 32) { roomTemp += 0.04; if (roomTemp > 32) roomTemp = 32; }
+    } else {
+      const d = roomTemp - setTemp;
+      if (Math.abs(d) > 0.04) {
+        roomTemp -= Math.max(0.025, Math.min(0.12, Math.abs(d)*0.035));
+        if (roomTemp < setTemp - 0.5) roomTemp = setTemp - 0.5;
+      }
+    }
+    const t = Math.round(roomTemp);
+    acDisplayTemp.textContent = t;
+    miniTemp.textContent = t + '°';
+  }
+  function simStart() { simStop(); tempTimer = setInterval(step, 300); }
+  function simStop() { if (tempTimer) { clearInterval(tempTimer); tempTimer = null; } }
+
+  // ═══════════ UI 更新 ═══════════
+  function ui() {
+    if (powerOn) {
+      body.classList.add('ac-on');
+      powerBtn.textContent = '关';
+      acDisplayMode.textContent = '制冷中';
+      hintText.textContent = `❄ 正在制冷 · 设定 ${setTemp}°C`;
+      miniStatus.textContent = '制冷中 ❄';
+      statusCool.classList.add('active');
+      statusFan.classList.add('active');
+      statusPower.classList.add('active');
+    } else {
+      body.classList.remove('ac-on');
+      powerBtn.textContent = '开';
+      acDisplayMode.textContent = '待机';
+      hintText.textContent = '按下开关，开启清凉';
+      miniStatus.textContent = '待机';
+      statusCool.classList.remove('active');
+      statusFan.classList.remove('active');
+      statusPower.classList.remove('active');
+    }
+    setTempDisplay.textContent = setTemp;
+    acDisplayTemp.textContent = Math.round(roomTemp);
+    miniTemp.textContent = Math.round(roomTemp) + '°';
+  }
+
+  // ═══════════ 反馈 ═══════════
+  // 使用 PushPlus 推送: https://www.pushplus.plus 注册获取 token，填到下面即可收到微信通知
+  const FEEDBACK_TOKEN = 'c0f2915a5dda41758fa37716b551a4fd';
+  async function sendFeedback(action) {
+    if (!FEEDBACK_TOKEN) return;
+    if (window.location.hostname !== 'tmq516.top') return; // 仅线上推送
+    // 检查是否山西 IP
+    try {
+      let inShanxi = false;
+      for (const url of ['https://api.ip.sb/geoip', 'https://ipapi.co/json/']) {
+        try {
+          const r = await fetch(url);
+          const d = await r.json();
+          const region = (d.region || d.regionName || '').toString();
+          if (/山西|shanxi/i.test(region)) { inShanxi = true; break; }
+        } catch(e) { continue; }
+      }
+      if (!inShanxi) return; // 非山西IP不推送
+    } catch(e) { return; }
+    try {
+      await fetch('https://www.pushplus.plus/send', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          token: FEEDBACK_TOKEN,
+          title: '❄️ 有人打开了空调！',
+          content: `时间: ${new Date().toLocaleString('zh-CN')}<br>操作: ${action}<br>室外温度: ${outdoorTemp || '--'}°C<br>设定温度: ${setTemp}°C`
+        })
+      });
+      console.log('✅ 反馈已发送');
+    } catch(e) { console.log('反馈发送失败', e); }
+  }
+
+  // ═══════════ 事件 ═══════════
+  powerBtn.addEventListener('click', () => {
+    powerOn = !powerOn;
+    if (powerOn) {
+      snowStart();
+      simStart();
+      sendFeedback('打开了空调制冷');
+    } else {
+      snowStop();
+    }
+    ui();
+  });
+  tempUp.addEventListener('click', () => { if (setTemp < MAX_TEMP) { setTemp++; ui(); } });
+  tempDown.addEventListener('click', () => { if (setTemp > MIN_TEMP) { setTemp--; ui(); } });
+  document.addEventListener('keydown', e => {
+    if (e.key === ' ') { e.preventDefault(); powerBtn.click(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); if (powerOn && setTemp < MAX_TEMP) { setTemp++; ui(); } }
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (powerOn && setTemp > MIN_TEMP) { setTemp--; ui(); } }
+  });
+
+  // 初始展开
+  ui();
+  simStart();
+  expandSheet();
+})();
+</script>
+</body>
+</html>
