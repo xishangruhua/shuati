@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>致密斑（Macula Densa）— 解剖结构可视化</title>
+<style>
+  :root {
+    --bg: #0a0e14;
+    --surface: #141b22;
+    --text: #cdd6e0;
+    --muted: #6c7a8d;
+    --accent: #e6b450;
+    --distal: #4db8d1;
+    --afferent: #e0556a;
+    --efferent: #e0556a;
+    --glomerulus: #c47fd3;
+    --md-glow: #f0d060;
+    --border: #1e2a38;
+    --green: #6db36d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ────────────────────────────── */
+  header {
+    text-align: center;
+    padding: 32px 20px 8px;
+    position: relative;
+    z-index: 2;
+  }
+  header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: linear-gradient(135deg, var(--md-glow), #f5a623, #e6b450);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header .sub {
+    margin-top: 4px;
+    font-size: 0.92rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Main Layout ───────────────────────── */
+  .main-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px 24px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  /* ── Canvas Card ───────────────────────── */
+  .canvas-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 8px;
+    position: relative;
+    box-shadow: 0 8px 40px rgba(0,0,0,.45);
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    cursor: default;
+  }
+
+  /* ── Controls ──────────────────────────── */
+  .controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .controls button {
+    padding: 8px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: .2s;
+    font-family: inherit;
+  }
+  .controls button:hover {
+    background: #1e2e3e;
+    border-color: #3a4f63;
+  }
+  .controls button.active {
+    background: #2a3a4f;
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 12px rgba(230,180,80,.2);
+  }
+
+  /* ── Info Cards ────────────────────────── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+  }
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    transition: .25s;
+  }
+  .info-card:hover {
+    border-color: #33475c;
+    transform: translateY(-1px);
+  }
+  .info-card .dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .info-card h3 {
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+    letter-spacing: 0.03em;
+    color: #e0e5ec;
+  }
+  .info-card p {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+  .dot--md  { background: var(--md-glow); box-shadow: 0 0 8px var(--md-glow); }
+  .dot--dst { background: var(--distal); }
+  .dot--aff { background: var(--afferent); }
+  .dot--eff { background: var(--efferent); }
+  .dot--glm { background: var(--glomerulus); }
+
+  /* ── Mnemonic Strip ────────────────────── */
+  .mnemonic {
+    background: linear-gradient(135deg, #1a1f2e, #191e28);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .mnemonic .icon { font-size: 1.8rem; }
+  .mnemonic strong { color: var(--accent); }
+  .mnemonic span { font-size: 0.9rem; color: var(--muted); }
+
+  /* ── Legend ────────────────────────────── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .legend-swatch {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+  }
+
+  /* ── Tooltip (custom) ──────────────────── */
+  .tooltip {
+    position: absolute;
+    pointer-events: none;
+    background: #1e2a38;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    color: var(--text);
+    white-space: nowrap;
+    box-shadow: 0 6px 24px rgba(0,0,0,.6);
+    opacity: 0;
+    transition: opacity .15s;
+    z-index: 10;
+  }
+  .tooltip.show { opacity: 1; }
+
+  /* ── Responsive ────────────────────────── */
+  @media (max-width: 700px) {
+    header h1 { font-size: 1.5rem; }
+    .info-grid { grid-template-columns: 1fr; }
+    .mnemonic { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<a href="../index.html" style="position:fixed;top:14px;left:16px;z-index:20;color:#6c7a8d;text-decoration:none;font-size:0.95rem;font-family:inherit;" onmouseover="this.style.color='#e6b450'" onmouseout="this.style.color='#6c7a8d'">← 返回</a>
+
+<header>
+  <h1>致密斑 · Macula Densa</h1>
+  <div class="sub">肾小球旁器（Juxtaglomerular Apparatus）核心结构</div>
+</header>
+
+<div class="main-wrap">
+
+  <!-- Canvas -->
+  <div class="canvas-card" id="canvasCard">
+    <canvas id="c"></canvas>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button id="btn-all" class="active" data-view="all">🔬 全景视图</button>
+    <button id="btn-zoom-md" data-view="md">🎯 聚焦致密斑</button>
+    <button id="btn-flow" data-view="flow">🔄 血流 / 滤液方向</button>
+    <button id="btn-reset" data-view="reset">↺ 复位</button>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><span class="legend-swatch" style="background:var(--md-glow)"></span> 致密斑</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:var(--distal)"></span> 远端小管 / 髓袢升支粗段</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:var(--afferent)"></span> 入球小动脉</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:var(--efferent)"></span> 出球小动脉</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:var(--glomerulus)"></span> 肾小球</div>
+  </div>
+
+  <!-- Info Cards -->
+  <div class="info-grid">
+    <div class="info-card">
+      <h3><span class="dot dot--md"></span>致密斑 Macula Densa</h3>
+      <p>位于<strong>髓袢升支粗段远端部</strong>（cTAL），是一簇特化的柱状上皮细胞。细胞排列紧密、核密集，故名"致密斑"。它紧贴<strong>入球小动脉</strong>和<strong>出球小动脉</strong>之间的血管极，<u>直接感受小管液中 NaCl 浓度</u>。</p>
+    </div>
+    <div class="info-card">
+      <h3><span class="dot dot--dst"></span>髓袢升支粗段（TAL）</h3>
+      <p>Henle 袢的升支分为细段和粗段。<strong>粗段</strong>（cTAL）主动重吸收 Na⁺/K⁺/2Cl⁻，对水不通透。其远端接近自身肾小体血管极的部分即致密斑，属于<strong>远端小管起始部</strong>。</p>
+    </div>
+    <div class="info-card">
+      <h3><span class="dot dot--glm"></span>肾小球旁器（JGA）</h3>
+      <p>JGA 由三部分组成：<strong>①致密斑</strong>（远端小管 Na 传感器）<strong>②球旁颗粒细胞</strong>（入球小动脉壁内，分泌肾素）<strong>③球外系膜细胞</strong>。三者协同实现<strong>管-球反馈（TGF）</strong>，调节肾小球滤过率与肾素释放。</p>
+    </div>
+    <div class="info-card">
+      <h3>🧪 管-球反馈（TGF）</h3>
+      <p>致密斑感知 NaCl ↑ → 释放腺苷/ATP → 入球小动脉<strong>收缩</strong> → GFR ↓（保护肾单位）。<br>致密斑感知 NaCl ↓ → 信号减弱 → 入球小动脉舒张 + 颗粒细胞释放<strong>肾素</strong> → GFR ↑。</p>
+    </div>
+  </div>
+
+  <!-- Mnemonic -->
+  <div class="mnemonic">
+    <span class="icon">🧠</span>
+    <div>
+      <strong>记忆口诀：</strong>
+      "<span style="color:#f0d060;">致密斑</span>夹在<span style="color:#e0556a;">入球</span>与<span style="color:#e0556a;">出球</span>之间，测钠发令，管球反馈。"
+      <br><span>Macula Densa = 远曲小管 → 血管极 → 夹在两条小动脉之间 → NaCl 传感器 → 肾素开关</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════
+//  Canvas + Interactive Drawing
+// ═══════════════════════════════════════
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const card   = document.getElementById('canvasCard');
+const tooltip = document.getElementById('tooltip');
+
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const W   = 1040;
+const H   = 620;
+
+canvas.width  = W * DPR;
+canvas.height = H * DPR;
+canvas.style.width  = W + 'px';
+canvas.style.height = H + 'px';
+ctx.scale(DPR, DPR);
+
+// ── State ──────────────────────────────
+let viewMode = 'all';     // 'all' | 'md' | 'flow'
+let hovered = null;
+let pulseT = 0;
+let animFrame;
+
+// ── Geometry data ──────────────────────
+// Coordinate system: origin top-left, Y-down
+const geo = {
+  // Glomerulus (bow)
+  glom:  { cx: 340, cy: 300, r: 72 },
+
+  // Afferent arteriole — comes from top-left
+  affIn: { x: 80,  y: 140 },
+  affMid:{ x: 230, y: 220 },
+  affEnd:{ x: 310, y: 280 },  // enters glomerulus
+
+  // Efferent arteriole — exits leftwards and wraps
+  effStart:{ x: 370, y: 280 }, // exits glomerulus
+  effMid:  { x: 500, y: 340 },
+  effEnd:  { x: 680, y: 420 },
+
+  // Distal tubule / TAL — comes from bottom-right, ascends
+  talStart:{ x: 800, y: 540 },
+  talMid1: { x: 660, y: 480 },
+  talMid2: { x: 480, y: 380 },
+  talEnd:  { x: 390, y: 320 },  // macula densa region
+
+  // Distal tubule continues past MD
+  dstCont:{ x: 350, y: 310 },
+  dstEnd: { x: 280, y: 340 },   // goes toward collecting duct area
+
+  // Macula Densa — sits between aff/eff at the vascular pole
+  md: { cx: 348, cy: 302, r: 16 },
+
+  // Glomerular capsule outline points
+  capsuleLeft:  { x: 270, y: 290 },
+  capsuleRight: { x: 410, y: 290 },
+  capsuleBot:   { x: 340, y: 365 },
+
+  // Labels
+  labelMD:     { x: 348, y: 270 },
+  labelAff:    { x: 170, y: 175 },
+  labelEff:    { x: 530, y: 355 },
+  labelGlom:   { x: 340, y: 300 },
+  labelTAL:    { x: 660, y: 482 },
+  labelDst:    { x: 380, y: 320 },  // "远端小管" label anchor
+};
+
+// ── Hit regions for hover ─────────────
+const hitRegions = [
+  { id: 'md',  cx: geo.md.cx, cy: geo.md.cy,  r: geo.md.r + 4,  label: '致密斑 Macula Densa\n感受 NaCl · 发起管-球反馈' },
+  { id: 'aff', cx: 190, cy: 185, r: 28, label: '入球小动脉\n将血液送入肾小球' },
+  { id: 'eff', cx: 560, cy: 360, r: 28, label: '出球小动脉\n将滤后血液带离肾小球' },
+  { id: 'glom',cx: geo.glom.cx, cy: geo.glom.cy, r: geo.glom.r + 6, label: '肾小球 Glomerulus\n毛细血管球 · 滤过血液' },
+  { id: 'tal', cx: 600, cy: 460, r: 30, label: '髓袢升支粗段（cTAL）\n主动转运 Na⁺/K⁺/2Cl⁻' },
+];
+
+// ── Drawing helpers ────────────────────
+function glow(color, radius) {
+  ctx.shadowColor = color;
+  ctx.shadowBlur = radius;
+}
+function noGlow() {
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+}
+
+// ── DRAW SCENE ─────────────────────────
+function draw(timestamp) {
+  pulseT = timestamp * 0.001;
+  ctx.clearRect(0, 0, W, H);
+
+  // ── Background grid ──────────────────
+  ctx.strokeStyle = 'rgba(255,255,255,.025)';
+  ctx.lineWidth = 1;
+  for (let gx = 0; gx < W; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke(); }
+  for (let gy = 0; gy < H; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke(); }
+
+  // ── Efferent arteriole (draw first, behind) ──
+  drawArtery(
+    [geo.effStart, geo.effMid, geo.effEnd],
+    '#e0556a', '#8b2e3a',
+    viewMode === 'flow' ? 'eff' : null
+  );
+
+  // ── Afferent arteriole ───────────────
+  drawArtery(
+    [geo.affIn, geo.affMid, geo.affEnd],
+    '#e0556a', '#8b2e3a',
+    viewMode === 'flow' ? 'aff' : null
+  );
+
+  // ── Bowman's capsule (back wall) ─────
+  ctx.beginPath();
+  ctx.arc(geo.glom.cx, geo.glom.cy, geo.glom.r + 18, -0.6 * Math.PI, 0.4 * Math.PI);
+  ctx.strokeStyle = 'rgba(170,160,200,.35)';
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([6, 3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // ── Glomerulus ───────────────────────
+  drawGlomerulus();
+
+  // ── Bowman's capsule (front arc) ─────
+  ctx.beginPath();
+  ctx.arc(geo.glom.cx, geo.glom.cy, geo.glom.r + 14, 0.4 * Math.PI, 1.4 * Math.PI);
+  ctx.strokeStyle = 'rgba(170,160,200,.5)';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Urinary space label
+  ctx.fillStyle = 'rgba(170,160,200,.35)';
+  ctx.font = 'italic 11px "Segoe UI","PingFang SC",sans-serif';
+  ctx.fillText('Bowman 囊腔', geo.glom.cx + geo.glom.r + 8, geo.glom.cy - geo.glom.r + 10);
+
+  // ── Distal tubule ascending limb ─────
+  drawDistalTubule();
+
+  // ── Macula Densa ─────────────────────
+  drawMaculaDensa();
+
+  // ── Capsule arrow to proximal tubule ─
+  drawProximalHint();
+
+  // ── Labels ───────────────────────────
+  drawLabels();
+
+  // ── Flow arrows (if flow mode) ───────
+  if (viewMode === 'flow') {
+    drawFlowArrows();
+  }
+
+  // ── Title annotations ────────────────
+  ctx.fillStyle = 'rgba(255,255,255,.06)';
+  ctx.font = '600 72px "Segoe UI","PingFang SC",sans-serif';
+  ctx.fillText('NEPHRON', 620, 140);
+
+  animFrame = requestAnimationFrame(draw);
+}
+
+// ── Artery drawing ─────────────────────
+function drawArtery(pts, colorLight, colorDark, flowDir) {
+  // Shadow tube
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const xc = (pts[i].x + pts[i+1].x) / 2;
+    const yc = (pts[i].y + pts[i+1].y) / 2;
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+  }
+  ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  ctx.lineWidth = 20;
+  ctx.strokeStyle = 'rgba(0,0,0,.4)';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Main tube
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const xc = (pts[i].x + pts[i+1].x) / 2;
+    const yc = (pts[i].y + pts[i+1].y) / 2;
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+  }
+  ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  ctx.lineWidth = 16;
+  const grad = ctx.createLinearGradient(pts[0].x, pts[0].y, pts[pts.length-1].x, pts[pts.length-1].y);
+  grad.addColorStop(0, colorDark);
+  grad.addColorStop(0.5, colorLight);
+  grad.addColorStop(1, colorDark);
+  ctx.strokeStyle = grad;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Inner highlight
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const xc = (pts[i].x + pts[i+1].x) / 2;
+    const yc = (pts[i].y + pts[i+1].y) / 2;
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+  }
+  ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = 'rgba(255,200,200,.15)';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Flow particles
+  if (flowDir) {
+    drawFlowParticles(pts, flowDir);
+  }
+  ctx.restore();
+}
+
+// ── Flow particles ─────────────────────
+function drawFlowParticles(pts, dir) {
+  const pathLen = pathLength(pts);
+  const count = 18;
+  for (let i = 0; i < count; i++) {
+    let t = (dir === 'aff')
+      ? ((pulseT * 0.6 + i / count) % 1)
+      : ((pulseT * 0.5 - i / count + 1) % 1);
+    const pt = pointOnPath(pts, t);
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, 2.8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,200,.85)';
+    glow('#ffff88', 8);
+    ctx.fill();
+    noGlow();
+  }
+}
+
+function pathLength(pts) {
+  let len = 0;
+  for (let i = 1; i < pts.length; i++) {
+    len += Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
+  }
+  return len;
+}
+function pointOnPath(pts, t) {
+  const total = pathLength(pts);
+  let target = t * total;
+  let acc = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const seg = Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
+    if (acc + seg >= target) {
+      const st = (target - acc) / seg;
+      return {
+        x: pts[i-1].x + (pts[i].x - pts[i-1].x) * st,
+        y: pts[i-1].y + (pts[i].y - pts[i-1].y) * st
+      };
+    }
+    acc += seg;
+  }
+  return pts[pts.length-1];
+}
+
+// ── Glomerulus ─────────────────────────
+function drawGlomerulus() {
+  const { cx, cy, r } = geo.glom;
+  // Capillary tuft
+  const tufts = [
+    { ox: -10, oy: -15, rx: 28, ry: 18, rot: 0.2 },
+    { ox:   8, oy: -10, rx: 24, ry: 16, rot: -0.3 },
+    { ox:  -5, oy:   8, rx: 26, ry: 15, rot: 0.5 },
+    { ox:  10, oy:  12, rx: 22, ry: 14, rot: -0.1 },
+    { ox: -14, oy:   0, rx: 18, ry: 22, rot: 0.7 },
+    { ox:   0, oy:  -2, rx: 30, ry: 20, rot: 0 },
+  ];
+  tufts.forEach(t => {
+    ctx.save();
+    ctx.translate(cx + t.ox, cy + t.oy);
+    ctx.rotate(t.rot);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, t.rx, t.ry, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(180,120,200,.3)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(190,140,210,.5)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.restore();
+  });
+  // Outer rim
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(196,127,211,.55)';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+}
+
+// ── Distal Tubule / TAL ────────────────
+function drawDistalTubule() {
+  const pts = [geo.talStart, geo.talMid1, geo.talMid2, geo.talEnd];
+
+  // Shadow
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const xc = (pts[i].x + pts[i+1].x) / 2;
+    const yc = (pts[i].y + pts[i+1].y) / 2;
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+  }
+  ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  ctx.lineWidth = 20;
+  ctx.strokeStyle = 'rgba(0,0,0,.35)';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Tube body
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const xc = (pts[i].x + pts[i+1].x) / 2;
+    const yc = (pts[i].y + pts[i+1].y) / 2;
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+  }
+  ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  ctx.lineWidth = 16;
+  ctx.strokeStyle = '#3a7d8c';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Lumen stripe
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length - 1; i++) {
+    const xc = (pts[i].x + pts[i+1].x) / 2;
+    const yc = (pts[i].y + pts[i+1].y) / 2;
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+  }
+  ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  ctx.lineWidth = 5;
+  ctx.strokeStyle = 'rgba(140,210,230,.2)';
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Epithelial cells (brush border effect on the outside)
+  for (let t = 0; t <= 1; t += 0.06) {
+    const pt = pointOnPath(pts, t);
+    const tan = tangentOnPath(pts, t);
+    const nx =  tan.y * 12;
+    const ny = -tan.x * 12;
+    ctx.beginPath();
+    ctx.moveTo(pt.x + nx * 0.4, pt.y + ny * 0.4);
+    ctx.lineTo(pt.x + nx, pt.y + ny);
+    ctx.strokeStyle = 'rgba(120,190,210,.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // TAL cells (small squares along the tube)
+  for (let t = 0.02; t <= 0.94; t += 0.08) {
+    const pt = pointOnPath(pts, t);
+    ctx.fillStyle = 'rgba(160,210,230,.25)';
+    ctx.fillRect(pt.x - 5, pt.y - 5, 10, 10);
+  }
+
+  // Flow particles in tubule (salt ions)
+  if (viewMode === 'flow') {
+    for (let i = 0; i < 14; i++) {
+      let t = ((pulseT * 0.35 + i / 14 + 0.18) % 1);
+      const pt = pointOnPath(pts, t);
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 2, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(180,255,255,.8)';
+      ctx.fill();
+      // Na+ label on some
+      if (i % 3 === 0) {
+        ctx.fillStyle = 'rgba(200,240,255,.7)';
+        ctx.font = '8px "Segoe UI",sans-serif';
+        ctx.fillText('Na⁺', pt.x + 5, pt.y - 5);
+      }
+    }
+  }
+
+  // Continue as distal convoluted tubule past MD
+  ctx.beginPath();
+  ctx.moveTo(geo.dstCont.x, geo.dstCont.y);
+  ctx.quadraticCurveTo(geo.dstEnd.x + 30, geo.dstEnd.y - 20, geo.dstEnd.x, geo.dstEnd.y);
+  ctx.lineWidth = 12;
+  ctx.strokeStyle = 'rgba(60,140,160,.5)';
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(120,200,220,.2)';
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function tangentOnPath(pts, t) {
+  const total = pathLength(pts);
+  let target = t * total;
+  let acc = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const seg = Math.hypot(pts[i].x - pts[i-1].x, pts[i].y - pts[i-1].y);
+    if (acc + seg >= target || i === pts.length - 1) {
+      const dx = pts[i].x - pts[i-1].x;
+      const dy = pts[i].y - pts[i-1].y;
+      const len = Math.hypot(dx, dy) || 1;
+      return { x: dx / len, y: dy / len };
+    }
+    acc += seg;
+  }
+  return { x: 1, y: 0 };
+}
+
+// ── Macula Densa ───────────────────────
+function drawMaculaDensa() {
+  const { cx, cy, r } = geo.md;
+  const pulse = Math.sin(pulseT * 2.5) * 0.25 + 0.75; // soft pulse
+
+  // Outer glow
+  glow('rgba(240,208,96,0.5)', 18 * pulse);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(240,200,80,.15)';
+  ctx.fill();
+  noGlow();
+
+  // Main disc
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  const mdGrad = ctx.createRadialGradient(cx - 4, cy - 4, 0, cx, cy, r);
+  mdGrad.addColorStop(0, '#fce884');
+  mdGrad.addColorStop(0.6, '#e6b450');
+  mdGrad.addColorStop(1, '#b8892a');
+  ctx.fillStyle = mdGrad;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,240,200,.7)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Nuclei dots inside (densely packed)
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2 + 0.3;
+    const dist  = (i % 4) * 2.5 + 2;
+    const nx = cx + Math.cos(angle) * dist;
+    const ny = cy + Math.sin(angle) * dist;
+    ctx.beginPath();
+    ctx.arc(nx, ny, 1.6, 0, Math.PI * 2);
+    ctx.fillStyle = '#5c3a10';
+    ctx.fill();
+  }
+
+  // Contact lines to aff/eff
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(cx - r * 0.5, cy - r * 0.7);
+  ctx.lineTo(geo.affEnd.x + 4, geo.affEnd.y - 10);
+  ctx.strokeStyle = 'rgba(240,180,60,.4)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx + r * 0.6, cy + r * 0.4);
+  ctx.lineTo(geo.effStart.x - 6, geo.effStart.y + 6);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// ── Proximal tubule hint ───────────────
+function drawProximalHint() {
+  ctx.beginPath();
+  ctx.moveTo(geo.glom.cx - geo.glom.r, geo.glom.cy + 10);
+  ctx.quadraticCurveTo(200, 390, 240, 440);
+  ctx.lineWidth = 12;
+  ctx.strokeStyle = 'rgba(100,150,110,.35)';
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.lineWidth = 4;
+  ctx.strokeStyle = 'rgba(140,200,150,.25)';
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(130,180,140,.4)';
+  ctx.font = 'italic 11px "Segoe UI","PingFang SC",sans-serif';
+  ctx.fillText('近端小管', 160, 440);
+}
+
+// ── Labels ─────────────────────────────
+function drawLabels() {
+  ctx.font = '600 13px "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
+
+  // Macula Densa
+  drawLabelBracket(geo.md.cx, geo.md.cy - geo.md.r - 2, '致密斑', '#f0d060', false);
+  ctx.fillStyle = 'rgba(240,208,96,.5)';
+  ctx.font = '10px "Segoe UI","PingFang SC",sans-serif';
+  ctx.fillText('Macula Densa', geo.md.cx - 32, geo.md.cy - geo.md.r - 20);
+
+  // Afferent
+  drawLabelBracket(geo.affMid.x - 10, geo.affMid.y - 18, '入球小动脉', '#e0556a', false);
+  ctx.fillStyle = 'rgba(224,85,106,.5)';
+  ctx.font = '10px "Segoe UI","PingFang SC",sans-serif';
+  ctx.fillText('Afferent', geo.affMid.x - 20, geo.affMid.y - 40);
+
+  // Efferent
+  drawLabelBracket(geo.effMid.x + 10, geo.effMid.y - 8, '出球小动脉', '#e0556a', false);
+  ctx.fillStyle = 'rgba(224,85,106,.5)';
+  ctx.font = '10px "Segoe UI","PingFang SC",sans-serif';
+  ctx.fillText('Efferent', geo.effMid.x - 18, geo.effMid.y - 30);
+
+  // TAL
+  drawLabelBracket(geo.talMid1.x - 10, geo.talMid1.y + 10, '髓袢升支粗段', '#4db8d1', true);
+  // "cTAL" sub-label
+  ctx.fillStyle = 'rgba(77,184,209,.45)';
+  ctx.font = '10px "Segoe UI","PingFang SC",sans-serif';
+  ctx.fillText('cTAL', geo.talMid1.x + 20, geo.talMid1.y + 38);
+
+  // Distal tubule continuation
+  ctx.fillStyle = 'rgba(77,184,209,.4)';
+  ctx.font = 'italic 10px "Segoe UI","PingFang SC",sans-serif';
+  ctx.fillText('远曲小管', geo.dstEnd.x - 20, geo.dstEnd.y + 20);
+
+  // Glomerulus
+  ctx.fillStyle = 'rgba(196,127,211,.55)';
+  ctx.font = '11px "Segoe UI","PingFang SC",sans-serif';
+  ctx.fillText('肾小球', geo.glom.cx - 25, geo.glom.cy - geo.glom.r - 24);
+  ctx.fillText('Glomerulus', geo.glom.cx - 25, geo.glom.cy - geo.glom.r - 10);
+
+  // JGA annotation
+  ctx.fillStyle = 'rgba(255,255,255,.5)';
+  ctx.font = 'italic 600 12px "Segoe UI","PingFang SC",sans-serif';
+  const jgaX = geo.md.cx - 60, jgaY = geo.md.cy - 52;
+  ctx.fillText('JGA', jgaX, jgaY);
+  // Bracket for JGA
+  ctx.strokeStyle = 'rgba(255,255,255,.35)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2, 2]);
+  ctx.beginPath();
+  ctx.moveTo(jgaX + 30, jgaY + 4);
+  ctx.lineTo(jgaX + 30, jgaY + 42);
+  ctx.lineTo(jgaX + 50, jgaY + 42);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawLabelBracket(x, y, text, color, rightSide) {
+  ctx.fillStyle = color;
+  ctx.font = '600 13px "Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
+  const tw = ctx.measureText(text).width;
+  const tx = rightSide ? x + 16 : x - tw - 6;
+  const ty = y - 4;
+  ctx.fillText(text, tx, ty);
+
+  // Line
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  const lx = rightSide ? x + 10 : x;
+  ctx.moveTo(lx, y);
+  ctx.lineTo(rightSide ? x + 16 : x - 6, y);
+  ctx.stroke();
+}
+
+// ── Flow direction arrows (big overlay) ─
+function drawFlowArrows() {
+  ctx.globalAlpha = 0.8;
+
+  // Blood flow label near afferent
+  drawBigArrow(geo.affMid.x, geo.affMid.y - 50, -0.2, '血流方向', '#ff9090');
+  drawBigArrow(geo.effMid.x, geo.effMid.y + 40, 0.3, '血流方向', '#ff9090');
+
+  // Filtrate flow along TAL
+  drawBigArrow(geo.talMid1.x - 50, geo.talMid1.y - 20, -0.6, '小管液 Na⁺·Cl⁻·K⁺', '#80e0e0');
+
+  // TGF signal
+  const mdX = geo.md.cx, mdY = geo.md.cy;
+  ctx.setLineDash([4, 3]);
+  ctx.strokeStyle = 'rgba(255,220,80,.7)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(mdX, mdY);
+  ctx.quadraticCurveTo(mdX - 80, mdY - 80, geo.affEnd.x - 20, geo.affEnd.y - 60);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Signal arrowhead
+  const sx = geo.affEnd.x - 20, sy = geo.affEnd.y - 60;
+  ctx.beginPath();
+  ctx.moveTo(sx, sy);
+  ctx.lineTo(sx - 8, sy - 5);
+  ctx.lineTo(sx - 3, sy + 6);
+  ctx.fillStyle = 'rgba(255,220,80,.7)';
+  ctx.fill();
+
+  ctx.fillStyle = 'rgba(255,220,80,.8)';
+  ctx.font = 'italic 11px "Segoe UI","PingFang SC",sans-serif';
+  ctx.fillText('腺苷 / ATP 信号', mdX - 100, mdY - 62);
+
+  ctx.globalAlpha = 1;
+}
+
+function drawBigArrow(cx, cy, angle, text, color) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(angle);
+
+  ctx.beginPath();
+  ctx.moveTo(40, 0);
+  ctx.lineTo(-20, -8);
+  ctx.lineTo(-20, 8);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  ctx.fillStyle = color;
+  ctx.font = 'italic 12px "Segoe UI","PingFang SC",sans-serif';
+  ctx.fillText(text, -40, 4);
+
+  ctx.restore();
+}
+
+// ── Hover / Interaction ────────────────
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  const scaleY = H / rect.height;
+  const mx = (e.clientX - rect.left) * scaleX;
+  const my = (e.clientY - rect.top)  * scaleY;
+
+  let found = null;
+  for (const hr of hitRegions) {
+    const dx = mx - hr.cx;
+    const dy = my - hr.cy;
+    if (Math.sqrt(dx*dx + dy*dy) < hr.r) {
+      found = hr;
+      break;
+    }
+  }
+  if (found !== hovered) {
+    hovered = found;
+    canvas.style.cursor = found ? 'pointer' : 'default';
+    if (found) {
+      tooltip.textContent = found.label;
+      tooltip.classList.add('show');
+    } else {
+      tooltip.classList.remove('show');
+    }
+  }
+  if (hovered) {
+    const tooltipW = tooltip.offsetWidth || 160;
+    const ttX = e.clientX - card.getBoundingClientRect().left + 18;
+    const ttY = e.clientY - card.getBoundingClientRect().top - 60;
+    tooltip.style.left = Math.min(ttX, card.offsetWidth - tooltipW - 10) + 'px';
+    tooltip.style.top  = Math.max(ttY, 8) + 'px';
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  hovered = null;
+  canvas.style.cursor = 'default';
+  tooltip.classList.remove('show');
+});
+
+// ── View mode buttons ──────────────────
+const buttons = document.querySelectorAll('.controls button[data-view]');
+buttons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const v = btn.dataset.view;
+    if (v === 'reset') {
+      viewMode = 'all';
+      document.getElementById('btn-all').classList.add('active');
+    } else {
+      viewMode = v;
+    }
+    // Adjust highlight pulse for zoom-md
+    if (viewMode === 'md') {
+      geo.md.r = 22;
+    } else {
+      geo.md.r = 16;
+    }
+  });
+});
+
+// ── Start ──────────────────────────────
+draw(0);
+
+// ── Resize handling ────────────────────
+window.addEventListener('resize', () => {
+  const cardW = card.clientWidth - 16;
+  const scale = Math.min(1, cardW / W);
+  canvas.style.width  = (W * scale) + 'px';
+  canvas.style.height = (H * scale) + 'px';
+});
+window.dispatchEvent(new Event('resize'));
+</script>
+
+</body>
+</html>

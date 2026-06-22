@@ -130,6 +130,11 @@
     $("game-entry").querySelector(".game-card").addEventListener("click",function(){
       window.location.href = "game/index.html";
     });
+    // 致密斑 — 解剖可视化
+    $("dense-entry").innerHTML = '<div class="dense-card">致密斑</div>';
+    $("dense-entry").querySelector(".dense-card").addEventListener("click",function(){
+      window.location.href = "macula-densa/index.html";
+    });
   }
 
   // ---------- 打开资料 → 模式页 ----------
