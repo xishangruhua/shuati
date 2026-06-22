@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>好累</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #e2efe5;
+    --bg-grad-1: #dcefe2;
+    --bg-grad-2: #e6f1e9;
+    --surface: #ffffff;
+    --surface-soft: #f6faf7;
+    --fg: #1f2a24;
+    --muted: #8a958e;
+    --line: rgba(60, 90, 70, 0.10);
+    --accent: #2f9e6f;
+    --accent-soft: #e3f3ea;
+    --shadow-sm: 0 1px 2px rgba(30,60,40,0.04), 0 1px 3px rgba(30,60,40,0.06);
+    --shadow-md: 0 2px 6px rgba(30,60,40,0.05), 0 8px 24px rgba(30,60,40,0.08);
+    --radius: 16px;
+  }
+
+  html, body {
+    height: 100%; height: 100dvh;
+    background: linear-gradient(160deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+    background-attachment: fixed;
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .container {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 60px 24px 40px;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; min-height: 100dvh;
+  }
+
+  .back {
+    position: fixed; top: 14px; left: 16px; z-index: 10;
+    background: none; border: none; color: var(--muted);
+    font-size: 0.95rem; cursor: pointer; padding: 6px 10px;
+    text-decoration: none; display: inline-block;
+    font-family: inherit;
+  }
+  .back:hover { color: var(--accent); }
+
+  .encourage-text {
+    text-align: center;
+    margin-top: 14vh;
+    margin-bottom: 40px;
+    line-height: 2;
+  }
+  .encourage-text .line {
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: #3a463f;
+    letter-spacing: 0.03em;
+  }
+  .encourage-text .line.sub {
+    font-size: 1.05rem;
+    color: var(--accent);
+    margin-top: 4px;
+  }
+
+  .btn-row {
+    display: flex; gap: 16px; margin-top: 24px; width: 100%; max-width: 360px;
+  }
+  .btn {
+    flex: 1; padding: 14px 0; font-size: 1rem; font-weight: 600;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    background: var(--surface); cursor: pointer; color: #2a3530;
+    box-shadow: var(--shadow-sm); font-family: inherit;
+    transition: transform .18s, box-shadow .18s, border-color .18s;
+    text-align: center;
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: rgba(47,158,111,0.3); }
+  .btn:active { transform: translateY(0); }
+  .btn.primary {
+    background: var(--accent); color: #fff; border: none;
+    box-shadow: 0 4px 14px rgba(47,158,111,0.30);
+  }
+  .btn.primary:hover { box-shadow: 0 6px 18px rgba(47,158,111,0.36); }
+
+  .random-phrase {
+    text-align: center; margin: 30px 0 16px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 24px 20px;
+    box-shadow: var(--shadow-sm);
+    max-width: 360px; width: 100%;
+  }
+  .random-phrase .p1 {
+    font-size: 1.2rem; font-weight: 600; color: #243029; margin-bottom: 8px;
+  }
+  .random-phrase .p2 {
+    font-size: 1rem; color: var(--accent);
+  }
+
+  .checkbox-group {
+    display: flex; flex-direction: column; gap: 14px;
+    margin: 30px 0 24px;
+    max-width: 360px; width: 100%;
+  }
+  .checkbox-item {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 16px 20px;
+    cursor: pointer; font-size: 1.05rem;
+    box-shadow: var(--shadow-sm);
+    transition: border-color .18s, background .18s;
+  }
+  .checkbox-item.checked { border-color: var(--accent); background: var(--accent-soft); }
+  .checkbox-item input { display: none; }
+  .check-dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px solid #c0cac4; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .18s; font-size: 13px; color: transparent;
+  }
+  .checkbox-item.checked .check-dot {
+    border-color: var(--accent); background: var(--accent); color: #fff;
+  }
+
+  .sent-toast {
+    position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
+    background: #33493e; color: #fff; padding: 12px 28px;
+    border-radius: 30px; font-size: 0.95rem;
+    box-shadow: var(--shadow-lg);
+    opacity: 0; transition: opacity .3s;
+    pointer-events: none; z-index: 100;
+  }
+  .sent-toast.show { opacity: 1; }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 400px) {
+    .encourage-text { margin-top: 8vh; }
+    .encourage-text .line { font-size: 1.15rem; }
+    .btn { font-size: 0.95rem; padding: 12px 0; }
+  }
+</style>
+</head>
+<body>
+<a class="back" href="../index.html">← 返回</a>
+
+<div class="container">
+  <!-- 鼓励语 -->
+  <div class="encourage-text">
+    <div class="line">你学这么久了很辛苦的</div>
+    <div class="line sub">休息一会吧！</div>
+    <div style="margin-top:16px;"></div>
+    <div class="line">别太辛苦！</div>
+    <div class="line sub">你那么厉害都会完成的！</div>
+  </div>
+
+  <!-- 主选项 -->
+  <div class="btn-row" id="mainBtns">
+    <button class="btn" onclick="showSelf()">自己玩</button>
+    <button class="btn primary" onclick="showInvite()">邀请他一起玩</button>
+  </div>
+
+  <!-- 自己玩：随机鼓励语 -->
+  <div id="selfSection" class="hidden" style="display:flex;flex-direction:column;align-items:center;width:100%;">
+    <div class="random-phrase" id="phraseBox">
+      <div class="p1" id="phrase1"></div>
+      <div class="p2" id="phrase2"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="openDouyin()">抖音</button>
+      <button class="btn" onclick="playSelf()">自己玩</button>
+    </div>
+    <button class="btn" style="margin-top:12px;max-width:360px;width:100%;" onclick="backToMain()">← 返回</button>
+  </div>
+
+  <!-- 邀请他一起玩 -->
+  <div id="inviteSection" class="hidden" style="display:flex;flex-direction:column;align-items:center;width:100%;">
+    <div class="checkbox-group" id="checkGroup">
+      <label class="checkbox-item" onclick="toggleCheck(this)">
+        <input type="checkbox" value="王者荣耀"><span class="check-dot">✓</span>王者荣耀
+      </label>
+      <label class="checkbox-item" onclick="toggleCheck(this)">
+        <input type="checkbox" value="洛克王国"><span class="check-dot">✓</span>洛克王国
+      </label>
+      <label class="checkbox-item" onclick="toggleCheck(this)">
+        <input type="checkbox" value="呼叫"><span class="check-dot">✓</span>呼叫
+      </label>
+    </div>
+    <button class="btn primary" style="max-width:360px;width:100%;" onclick="submitInvite()">提交</button>
+    <button class="btn" style="margin-top:12px;max-width:360px;width:100%;" onclick="backToMain()">← 返回</button>
+  </div>
+</div>
+
+<div class="sent-toast" id="toast">✅ 已发送，等着吧～</div>
+
+<script>
+(function() {
+  // ── 鼓励语库 ──
+  const phrases = [
+    ["今天的努力，是明天的底气","你已经比昨天更厉害了！"],
+    ["累了就歇歇，不丢人","休息好了才能走更远的路"],
+    ["每一份坚持都算数","你想要的都在路上"],
+    ["你在悄悄变厉害","只是自己还没发现而已"],
+    ["别给自己太大压力","你已经做得很好了"],
+    ["就算今天只完成了一点点","那也是向前走了一步"],
+    ["山高路远","但你已经出发了"],
+    ["你比自己想象的更强","别怕，往前走就行"],
+    ["偷懒五分钟不叫偷懒","叫战略性暂停"],
+    ["今天先放过自己","明天再卷也不迟"],
+    ["坚持到现在真的不容易","你值得好好休息"],
+    ["别管别人走到哪了","你的路是你自己的"],
+    ["慢慢来比较快","不用着急完成所有事"],
+    ["你专注的样子很好看","但发呆的样子也很可爱"],
+    ["今天的烦恼留给今天","明天的你会有新的力量"],
+    ["手机玩久了眼睛会累","但开心最重要"],
+    ["允许自己不够完美","因为本来就没人是完美的"],
+    ["别对自己那么严格","你已经超出很多人了"],
+    ["这世界很大","但总有一个地方是你的"],
+    ["你担心的事大部分不会发生","放心去玩吧"]
+  ];
+
+  const FEEDBACK_TOKEN = 'c0f2915a5dda41758fa37716b551a4fd';
+
+  // ── 自己玩 ──
+  window.showSelf = function() {
+    const pair = phrases[Math.floor(Math.random() * phrases.length)];
+    document.getElementById('phrase1').textContent = pair[0];
+    document.getElementById('phrase2').textContent = pair[1];
+    document.getElementById('mainBtns').classList.add('hidden');
+    document.getElementById('inviteSection').classList.add('hidden');
+    document.getElementById('selfSection').classList.remove('hidden');
+    window.scrollTo(0, 0);
+  };
+
+  // ── 邀请他一起玩 ──
+  window.showInvite = function() {
+    document.getElementById('mainBtns').classList.add('hidden');
+    document.getElementById('selfSection').classList.add('hidden');
+    document.getElementById('inviteSection').classList.remove('hidden');
+    window.scrollTo(0, 0);
+  };
+
+  // ── 返回主界面 ──
+  window.backToMain = function() {
+    document.getElementById('selfSection').classList.add('hidden');
+    document.getElementById('inviteSection').classList.add('hidden');
+    document.getElementById('mainBtns').classList.remove('hidden');
+    window.scrollTo(0, 0);
+  };
+
+  // ── 抖音 ──
+  window.openDouyin = function() {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      // 尝试唤起抖音 App
+      const schemes = ['snssdk1128://', 'douyin://'];
+      let launched = false;
+      for (const s of schemes) {
+        const ifr = document.createElement('iframe');
+        ifr.style.display = 'none';
+        ifr.src = s;
+        document.body.appendChild(ifr);
+        setTimeout(() => ifr.remove(), 2000);
+      }
+      // 2 秒后如果没唤起，跳转网页
+      setTimeout(() => {
+        if (!document.hidden) window.open('https://www.douyin.com', '_blank');
+      }, 2200);
+    } else {
+      window.open('https://www.douyin.com', '_blank');
+    }
+  };
+
+  // ── 自己玩（关闭页面）──
+  window.playSelf = function() {
+    window.close();
+    // 如果关不掉，跳回首页
+    setTimeout(() => { window.location.href = '../index.html'; }, 300);
+  };
+
+  // ── 复选框 ──
+  window.toggleCheck = function(el) {
+    el.classList.toggle('checked');
+  };
+
+  // ── 提交 ──
+  window.submitInvite = async function() {
+    const checked = document.querySelectorAll('#checkGroup .checkbox-item.checked input');
+    const selected = Array.from(checked).map(i => i.value);
+    if (!selected.length) { alert('至少选一个嘛～'); return; }
+
+    // 仅线上推送
+    if (window.location.hostname !== 'tmq516.top') {
+      showToast('本地测试，假装已发送：' + selected.join('、'));
+      return;
+    }
+
+    // 检查山西 IP
+    let inShanxi = false;
+    try {
+      for (const url of ['https://api.ip.sb/geoip', 'https://ipapi.co/json/']) {
+        try {
+          const r = await fetch(url);
+          const d = await r.json();
+          const region = (d.region || d.regionName || '').toString();
+          if (/山西|shanxi/i.test(region)) { inShanxi = true; break; }
+        } catch(e) { continue; }
+      }
+    } catch(e) {}
+
+    if (!inShanxi) { showToast('已提交（非山西IP不推送）'); return; }
+    if (!FEEDBACK_TOKEN) { showToast('已提交'); return; }
+
+    try {
+      await fetch('https://www.pushplus.plus/send', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          token: FEEDBACK_TOKEN,
+          title: '🎮 有人邀请你一起玩！',
+          content: `时间: ${new Date().toLocaleString('zh-CN')}<br>想玩的: ${selected.join('、')}`
+        })
+      });
+    } catch(e) {}
+
+    showToast('✅ 已发送，等着吧～');
+  };
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+})();
+</script>
+</body>
+</html>

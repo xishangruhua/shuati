@@ -120,6 +120,11 @@
     $("hot-entry").querySelector(".hot-card").addEventListener("click",function(){
       window.location.href = "ac-app/index.html";
     });
+    // 好累 — 休息鼓励入口
+    $("lei-entry").innerHTML = '<div class="lei-card">好累</div>';
+    $("lei-entry").querySelector(".lei-card").addEventListener("click",function(){
+      window.location.href = "haolei/index.html";
+    });
   }
 
   // ---------- 打开资料 → 模式页 ----------
