@@ -125,6 +125,11 @@
     $("lei-entry").querySelector(".lei-card").addEventListener("click",function(){
       window.location.href = "haolei/index.html";
     });
+    // 小游戏
+    $("game-entry").innerHTML = '<div class="game-card">小游戏</div>';
+    $("game-entry").querySelector(".game-card").addEventListener("click",function(){
+      window.location.href = "game/index.html";
+    });
   }
 
   // ---------- 打开资料 → 模式页 ----------
