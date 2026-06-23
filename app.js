@@ -342,7 +342,7 @@
     $("question-stem").textContent = isTerm ? q.definition : q.stem;
 
     var box = $("options"); box.innerHTML = "";
-    var entries = q._renderEntries || (isTest ? shuffle(optionEntries(q)) : optionEntries(q));
+    var entries = q._renderEntries || optionEntries(q);
     q._renderEntries = entries;
     var isMulti = q.options && q.answer.length > 1;
     var correctSet = answerSet(q);
