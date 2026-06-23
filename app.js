@@ -241,7 +241,7 @@
   }
   function startUnifiedTest(mat, qs) {
     buildTermChoices(qs);
-    session = { mode:"test", mid:mat.id, isWrongbook:false, list:qs, idx:0, userAns:{}, correctCount:0, essayRemembered:{}, streak:0 };
+    session = { mode:"test", mid:mat.id, isWrongbook:false, list:qs, idx:0, userAns:{}, correctCount:0, essayRemembered:{}, streak:0, easterTriggered:false };
     show("quiz"); renderQuestion();
   }
   function startOldReview(mat) {
@@ -256,7 +256,7 @@
     var qs = mat.questions.slice();
     if (mat.type==="term") buildTermChoices(qs);
     var picked = shuffle(qs).slice(0, Math.min(count, qs.length));
-    session = { mode:"test", mid:mat.id, isWrongbook:false, list:picked, idx:0, userAns:{}, correctCount:0, streak:0 };
+    session = { mode:"test", mid:mat.id, isWrongbook:false, list:picked, idx:0, userAns:{}, correctCount:0, streak:0, easterTriggered:false };
     show("quiz"); renderQuestion();
   }
   function startWrongbook() {
@@ -267,7 +267,7 @@
       all.forEach(function(q){ if(store.wrong[q._uid]){q._matTitle=mat.title;qs.push(q);} });
     });
     buildTermChoices(qs);
-    session = { mode:"test", mid:null, isWrongbook:true, list:shuffle(qs), idx:0, userAns:{}, correctCount:0, essayRemembered:{}, streak:0 };
+    session = { mode:"test", mid:null, isWrongbook:true, list:shuffle(qs), idx:0, userAns:{}, correctCount:0, essayRemembered:{}, streak:0, easterTriggered:false };
     show("quiz"); renderQuestion();
   }
 
@@ -448,10 +448,11 @@
 
     if (ok) {
       $("submit-btn").classList.add("hidden");
-      // 彩蛋：连续答对20题
-      if (session.streak === 20) {
+      // 彩蛋：连续答对50题
+      if (session.streak === 50) {
+        session.easterTriggered = true;
         showEaster();
-        return; // 暂停，等用户关弹窗后手动点下一题
+        return; // 暂停，等用户关弹窗后手动继续
       }
       setTimeout(function(){
         if(session.idx<session.list.length-1){session.idx++;renderQuestion();}
@@ -488,11 +489,18 @@
     var total=session.list.length;
     if(!total)return;
 
-    // 彩蛋：显示999999分 + 烟花
-    showEasterScore();
-
     var score = Math.round(session.correctCount/total*100);
-    $("result-score").textContent=score+" 分";
+
+    // 彩蛋触发过：结果页直接显示999999 + 烟花
+    if (session.easterTriggered) {
+      $("result-score").textContent = "999999 分";
+      $("result-score").classList.add("easter");
+      if(!fwCanvas) initFireworks();
+      startFireworks();
+    } else {
+      $("result-score").textContent = score + " 分";
+      $("result-score").classList.remove("easter");
+    }
     $("result-detail").textContent="共 "+total+" 题，答对（含记住）"+session.correctCount+" 题";
 
     if(!session.isWrongbook&&session.mid){
@@ -557,14 +565,16 @@
 
   // ========== 彩蛋 ==========
 
-  // —— 20连对弹窗 ——
+  // —— 50连对彩蛋弹窗 ——
   window.showEaster = function(){
     $("easter-dialog").classList.add("show");
   };
   window.closeEaster = function(){
     $("easter-dialog").classList.remove("show");
     session.streak = 0; // 重置，不再重复触发
-    // 继续：自动下一题或结束
+    // 额外进度加10%
+    var jump = Math.max(1, Math.floor(session.list.length * 0.1));
+    session.idx = Math.min(session.idx + jump, session.list.length - 1);
     if(session.idx < session.list.length-1){ session.idx++; renderQuestion(); }
     else finishTest();
   };
@@ -638,14 +648,5 @@
     setTimeout(function(){ fwRunning = false; }, 8000);
   }
 
-  window.showEasterScore = function(){
-    if(!fwCanvas) initFireworks();
-    $("easter-score").classList.add("show");
-    startFireworks();
-  };
-  window.closeEasterScore = function(){
-    $("easter-score").classList.remove("show");
-    fwRunning = false;
-  };
 
 })();

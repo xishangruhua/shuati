@@ -413,10 +413,8 @@ html, body {
 }
 .easter-btn:active { transform: scale(0.97); }
 
-/* 999999分 */
-#easter-score { flex-direction: column; }
-#easter-score.show { display: flex; }
-.easter-score-num {
+/* 彩蛋触发后结果页分数 */
+.result-score.easter {
   font-size: 4.5rem; font-weight: 900;
   background: linear-gradient(135deg, #ffd93d, #ff6b6b, #6c5ce7);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -427,14 +425,6 @@ html, body {
   0% { transform: scale(0); opacity: 0; }
   70% { transform: scale(1.15); }
   100% { transform: scale(1); opacity: 1; }
-}
-.easter-score-label {
-  font-size: 1rem; color: rgba(255,255,255,0.85); margin-top: 4px;
-}
-.easter-score-btn {
-  margin-top: 26px; padding: 11px 38px; font-size: 0.95rem; font-weight: 600;
-  background: var(--surface); border: 1px solid var(--line);
-  border-radius: 14px; color: var(--fg); cursor: pointer; font-family: inherit;
 }
 
 /* 烟花 canvas */
