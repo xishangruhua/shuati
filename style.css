@@ -160,6 +160,20 @@ html, body {
   border-color: rgba(130,100,180,0.35); color: #3a2a5a;
 }
 
+.xuanku-entry { margin-top: 12px; }
+.xuanku-card {
+  border: 1px solid rgba(47,158,111,0.25); border-radius: var(--radius); padding: 11px 20px;
+  cursor: pointer; text-align: center; font-size: 0.92rem; font-weight: 500;
+  color: #2f9e6f;
+  background: linear-gradient(135deg, #e8faf0, #d5f2e2);
+  box-shadow: var(--shadow-sm);
+  transition: transform .18s, box-shadow .18s, border-color .18s;
+}
+.xuanku-card:hover {
+  transform: translateY(-2px); box-shadow: var(--shadow-md);
+  border-color: rgba(47,158,111,0.4); color: #1a6e3a;
+}
+
 /* —— 通用按钮 —— */
 .back {
   background: none; border: none; color: var(--muted);
