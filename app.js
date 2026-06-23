@@ -29,11 +29,12 @@
   store.wrong = store.wrong || {};
   store.resume = store.resume || {};
   function matState(k) {
-    if (!store.materials[k]) store.materials[k] = { mastery: {}, scoreAvg: null, tests: 0, progress: 0 };
+    if (!store.materials[k]) store.materials[k] = { mastery: {}, scoreAvg: null, tests: 0, progress: 0, easterBonus: 0 };
     var st = store.materials[k];
     if (!st.mastery) st.mastery = {};
     if (st.scoreAvg === undefined) st.scoreAvg = null;
     if (st.tests === undefined) st.tests = 0;
+    if (st.easterBonus === undefined) st.easterBonus = 0;
     return st;
   }
 
@@ -72,7 +73,8 @@
     var mr = sum/(allQ.length*MASTER_TARGET);
     var cov = attempted/allQ.length;
     var sa = st.scoreAvg==null ? 0 : st.scoreAvg;
-    return Math.round((mr*0.5 + sa*cov*0.5)*100);
+    var bonus = st.easterBonus || 0;
+    return Math.min(100, Math.round((mr*0.5 + sa*cov*0.5)*100) + bonus);
   }
 
   // ---------- 首页 ----------
@@ -508,6 +510,10 @@
       var thisScore=session.correctCount/total;
       st.scoreAvg=(st.scoreAvg==null)?thisScore:(st.scoreAvg*0.6+thisScore*0.4);
       st.tests=(st.tests||0)+1;
+      // 彩蛋：资料进度额外+10%
+      if (session.easterTriggered) {
+        st.easterBonus = (st.easterBonus || 0) + 10;
+      }
       var p = computeMatProgress(currentMat||BANK[0]);
       $("result-detail").textContent+="　|　近期 "+Math.round(st.scoreAvg*100)+"%　|　进度 "+p+"%";
       saveStore(store);
@@ -572,9 +578,7 @@
   window.closeEaster = function(){
     $("easter-dialog").classList.remove("show");
     session.streak = 0; // 重置，不再重复触发
-    // 额外进度加10%
-    var jump = Math.max(1, Math.floor(session.list.length * 0.1));
-    session.idx = Math.min(session.idx + jump, session.list.length - 1);
+    // 继续：自动下一题或结束
     if(session.idx < session.list.length-1){ session.idx++; renderQuestion(); }
     else finishTest();
   };
