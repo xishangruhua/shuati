@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>彩蛋测试</title>
+<style>
+  :root {
+    --bg: #e2efe5; --surface: #fff; --fg: #1f2a24; --muted: #8a958e;
+    --accent: #2f9e6f; --accent-soft: #e3f3ea; --line: rgba(60,90,70,0.1);
+    --shadow: 0 1px 3px rgba(30,60,40,0.06);
+    --shadow-md: 0 2px 6px rgba(30,60,40,0.05), 0 8px 24px rgba(30,60,40,0.08);
+    --radius: 16px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    min-height: 100vh; min-height: 100dvh;
+    background: linear-gradient(160deg, #dcefe2 0%, #e6f1e9 100%);
+    background-attachment: fixed;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Fireworks canvas */
+  #fireworks {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  }
+
+  .controls {
+    display: flex; gap: 16px; justify-content: center; padding-top: 30vh;
+  }
+  .controls button {
+    padding: 14px 32px; font-size: 1rem; border: 1px solid var(--line); border-radius: 14px;
+    cursor: pointer; font-weight: 600; font-family: inherit;
+    background: var(--surface); color: var(--fg);
+    box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s;
+  }
+  .controls button:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+  /* Dialog overlay */
+  .dialog-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(30,60,40,0.35);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity .3s;
+  }
+  .dialog-overlay.show { opacity: 1; pointer-events: auto; }
+
+  /* Dialog box — matches green quiz theme */
+  .dialog {
+    background: linear-gradient(160deg, #ffffff, #f6faf7);
+    border: 1px solid rgba(47,158,111,0.15);
+    border-radius: var(--radius);
+    padding: 32px 26px 22px;
+    max-width: 380px; width: 90%;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(30,60,40,0.12), 0 2px 10px rgba(47,158,111,0.08);
+    transform: translateY(16px) scale(0.96);
+    transition: transform .3s cubic-bezier(.2,.7,.3,1);
+  }
+  .dialog-overlay.show .dialog { transform: translateY(0) scale(1); }
+
+  .dialog-emoji {
+    font-size: 2.8rem; margin-bottom: 6px;
+    animation: bounce .6s ease infinite alternate;
+  }
+  @keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-8px); }
+  }
+
+  .dialog-text {
+    font-size: 1.05rem; font-weight: 600; color: #243029; line-height: 2;
+    margin-bottom: 8px;
+  }
+  .dialog-text .green { color: var(--accent); font-size: 1.15rem; }
+
+  .dialog-kawaii {
+    font-size: 0.95rem; color: #e6b450; margin-bottom: 18px;
+    letter-spacing: 0.04em;
+  }
+
+  /* Douyin hint — just text, NOT clickable */
+  .dialog-douyin-hint {
+    font-size: 0.85rem; color: var(--muted);
+    margin-bottom: 16px;
+    opacity: 0.7;
+  }
+
+  /* Only one button: continue */
+  .dialog-btn-continue {
+    display: block; width: 100%; padding: 13px 0; font-size: 0.98rem; font-weight: 600;
+    background: var(--accent); color: #fff; border: none; border-radius: 14px;
+    cursor: pointer; font-family: inherit;
+    box-shadow: 0 4px 14px rgba(47,158,111,0.3);
+    transition: transform .12s, box-shadow .12s;
+  }
+  .dialog-btn-continue:active { transform: scale(0.97); }
+
+  /* Score overlay */
+  .score-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; background: rgba(30,60,40,0.55);
+    opacity: 0; pointer-events: none; transition: opacity .4s;
+  }
+  .score-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .score-number {
+    font-size: 5rem; font-weight: 900;
+    background: linear-gradient(135deg, #ffd93d, #ff6b6b, #6c5ce7);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: popIn .5s cubic-bezier(.2,.7,.3,1);
+  }
+  @keyframes popIn {
+    0% { transform: scale(0); opacity: 0; }
+    70% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .score-label {
+    font-size: 1.1rem; color: rgba(255,255,255,0.8); margin-top: 6px;
+  }
+  .score-btn {
+    margin-top: 28px; padding: 12px 40px; font-size: 1rem; font-weight: 600;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; color: var(--fg); cursor: pointer; font-family: inherit;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="fireworks"></canvas>
+
+<div class="controls">
+  <button onclick="showDialog()">🎉 20连对弹窗</button>
+  <button onclick="showScore()">💯 999999分+烟花</button>
+</div>
+
+<!-- 20连对彩蛋弹窗 -->
+<div class="dialog-overlay" id="dialog">
+  <div class="dialog">
+    <div class="dialog-emoji">🎉</div>
+    <div class="dialog-text">
+      哇居然这么厉害，不愧是你<br>
+      <span class="green">真的很厉害</span><br>
+      这随便拿下<br>
+      让我们休息会吧
+    </div>
+    <div class="dialog-kawaii">٩(●´৺`●)૭٩(●´৺`●)و</div>
+    <div class="dialog-douyin-hint">点击跳转抖音玩一会</div>
+    <button class="dialog-btn-continue" onclick="closeDialog()">不要，我要继续答题</button>
+  </div>
+</div>
+
+<!-- 999999分 + 烟花 -->
+<div class="score-overlay" id="scoreOverlay">
+  <div class="score-number">999999</div>
+  <div class="score-label">分</div>
+  <button class="score-btn" onclick="closeScore()">👍 好的</button>
+</div>
+
+<script>
+// ========== Fireworks ==========
+const canvas = document.getElementById('fireworks');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [], running = false, animId;
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+resize();
+
+class Particle {
+  constructor(x, y, color) {
+    this.x = x; this.y = y;
+    this.vx = (Math.random() - 0.5) * 8;
+    this.vy = (Math.random() - 0.5) * 8 - 2;
+    this.color = color; this.alpha = 1;
+    this.decay = 0.012 + Math.random() * 0.02;
+    this.size = 2 + Math.random() * 4;
+    this.gravity = 0.08;
+    this.trail = [];
+  }
+  update() {
+    this.trail.push({ x: this.x, y: this.y, alpha: this.alpha });
+    if (this.trail.length > 5) this.trail.shift();
+    this.x += this.vx; this.y += this.vy;
+    this.vy += this.gravity; this.alpha -= this.decay;
+  }
+  draw(ctx) {
+    for (const t of this.trail) {
+      ctx.beginPath(); ctx.arc(t.x, t.y, this.size * 0.5, 0, Math.PI * 2);
+      ctx.fillStyle = this.color.replace('1)', (t.alpha * 0.25) + ')'); ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = this.color.replace('1)', this.alpha + ')'); ctx.fill();
+  }
+}
+
+function explode(x, y, count = 50) {
+  const colors = [
+    'rgba(255,107,107,1)', 'rgba(255,217,61,1)', 'rgba(71,183,135,1)',
+    'rgba(108,92,231,1)', 'rgba(255,142,83,1)', 'rgba(253,121,168,1)',
+    'rgba(162,155,254,1)', 'rgba(0,206,201,1)', 'rgba(255,234,167,1)',
+  ];
+  for (let i = 0; i < count; i++) {
+    particles.push(new Particle(x, y, colors[Math.floor(Math.random() * colors.length)]));
+  }
+}
+
+function animate() {
+  ctx.clearRect(0, 0, W, H);
+  particles = particles.filter(p => p.alpha > 0);
+  for (const p of particles) p.update();
+  for (const p of particles) p.draw(ctx);
+  if (running || particles.length > 0) animId = requestAnimationFrame(animate);
+}
+
+function startFireworks() {
+  running = true;
+  if (!animId) animate();
+  const burst = () => {
+    if (!running) return;
+    const x = Math.random() * W;
+    const y = Math.random() * H * 0.55 + H * 0.1;
+    explode(x, y, 35 + Math.floor(Math.random() * 35));
+    setTimeout(burst, 250 + Math.random() * 400);
+  };
+  burst();
+  setTimeout(() => { running = false; }, 8000);
+}
+
+// ========== Dialog ==========
+function showDialog() { document.getElementById('dialog').classList.add('show'); }
+function closeDialog() { document.getElementById('dialog').classList.remove('show'); }
+
+// ========== Score ==========
+function showScore() {
+  document.getElementById('scoreOverlay').classList.add('show');
+  startFireworks();
+}
+function closeScore() {
+  document.getElementById('scoreOverlay').classList.remove('show');
+  running = false;
+}
+
+document.getElementById('dialog').addEventListener('click', function(e) {
+  if (e.target === this) closeDialog();
+});
+</script>
+</body>
+</html>

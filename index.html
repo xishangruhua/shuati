@@ -89,6 +89,31 @@
     </section>
   </div>
 
+  <!-- 20连对彩蛋弹窗 -->
+  <div class="easter-overlay" id="easter-dialog">
+    <div class="easter-box">
+      <div class="easter-emoji">🎉</div>
+      <div class="easter-text">
+        哇居然这么厉害，不愧是你<br>
+        <span class="easter-green">真的很厉害</span><br>
+        这考试不随随便便拿下！<br>
+        让我们休息会吧
+      </div>
+      <div class="easter-kawaii">٩(●´৺`●)૭٩(●´৺`●)و</div>
+      <div class="easter-douyin">点击跳转抖音玩一会</div>
+      <button class="easter-btn" onclick="closeEaster()">不要，我要继续答题</button>
+    </div>
+  </div>
+
+  <!-- 999999分 + 烟花 -->
+  <div class="easter-overlay" id="easter-score">
+    <div class="easter-score-num">999999</div>
+    <div class="easter-score-label">分</div>
+    <button class="easter-score-btn" onclick="closeEasterScore()">👍 好的</button>
+  </div>
+
+  <canvas id="fireworks-canvas"></canvas>
+
   <script src="questions.js"></script>
   <script src="app.js"></script>
 </body>

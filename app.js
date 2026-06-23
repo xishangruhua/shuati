@@ -241,7 +241,7 @@
   }
   function startUnifiedTest(mat, qs) {
     buildTermChoices(qs);
-    session = { mode:"test", mid:mat.id, isWrongbook:false, list:qs, idx:0, userAns:{}, correctCount:0, essayRemembered:{} };
+    session = { mode:"test", mid:mat.id, isWrongbook:false, list:qs, idx:0, userAns:{}, correctCount:0, essayRemembered:{}, streak:0 };
     show("quiz"); renderQuestion();
   }
   function startOldReview(mat) {
@@ -256,7 +256,7 @@
     var qs = mat.questions.slice();
     if (mat.type==="term") buildTermChoices(qs);
     var picked = shuffle(qs).slice(0, Math.min(count, qs.length));
-    session = { mode:"test", mid:mat.id, isWrongbook:false, list:picked, idx:0, userAns:{}, correctCount:0 };
+    session = { mode:"test", mid:mat.id, isWrongbook:false, list:picked, idx:0, userAns:{}, correctCount:0, streak:0 };
     show("quiz"); renderQuestion();
   }
   function startWrongbook() {
@@ -267,7 +267,7 @@
       all.forEach(function(q){ if(store.wrong[q._uid]){q._matTitle=mat.title;qs.push(q);} });
     });
     buildTermChoices(qs);
-    session = { mode:"test", mid:null, isWrongbook:true, list:shuffle(qs), idx:0, userAns:{}, correctCount:0, essayRemembered:{} };
+    session = { mode:"test", mid:null, isWrongbook:true, list:shuffle(qs), idx:0, userAns:{}, correctCount:0, essayRemembered:{}, streak:0 };
     show("quiz"); renderQuestion();
   }
 
@@ -433,7 +433,8 @@
     var correct = answerSet(q);
     var ok = arrEq(chosen.slice().sort(), correct);
     session.userAns[q._uid] = { chosen:chosen, ok:ok };
-    if (ok) session.correctCount++;
+    if (ok) { session.correctCount++; session.streak = (session.streak || 0) + 1; }
+    else session.streak = 0;
 
     var storeKey = session.isWrongbook ? q._matId : session.mid;
     if (storeKey) {
@@ -447,6 +448,11 @@
 
     if (ok) {
       $("submit-btn").classList.add("hidden");
+      // 彩蛋：连续答对20题
+      if (session.streak === 20) {
+        showEaster();
+        return; // 暂停，等用户关弹窗后手动点下一题
+      }
       setTimeout(function(){
         if(session.idx<session.list.length-1){session.idx++;renderQuestion();}
         else finishTest();
@@ -481,8 +487,10 @@
   function finishTest(){
     var total=session.list.length;
     if(!total)return;
-    // 问答不计入分数（不算选择判断题的答对率，但"我已记住"算正确）
-    // 这里简单处理：所有答对（含记住）/总题数
+
+    // 彩蛋：显示999999分 + 烟花
+    showEasterScore();
+
     var score = Math.round(session.correctCount/total*100);
     $("result-score").textContent=score+" 分";
     $("result-detail").textContent="共 "+total+" 题，答对（含记住）"+session.correctCount+" 题";
@@ -546,4 +554,98 @@
 
   if(!BANK.length){$("material-list").innerHTML="<p>未找到题库数据</p>";}
   else renderHome();
+
+  // ========== 彩蛋 ==========
+
+  // —— 20连对弹窗 ——
+  window.showEaster = function(){
+    $("easter-dialog").classList.add("show");
+  };
+  window.closeEaster = function(){
+    $("easter-dialog").classList.remove("show");
+    session.streak = 0; // 重置，不再重复触发
+    // 继续：自动下一题或结束
+    if(session.idx < session.list.length-1){ session.idx++; renderQuestion(); }
+    else finishTest();
+  };
+
+  // —— 999999分 + 烟花 ——
+  var fwRunning = false, fwParticles = [], fwAnimId = null;
+  var fwCanvas = null, fwCtx = null;
+
+  function initFireworks(){
+    fwCanvas = $("fireworks-canvas");
+    fwCtx = fwCanvas.getContext("2d");
+    var resize = function(){
+      fwCanvas.width = window.innerWidth;
+      fwCanvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", resize);
+    resize();
+  }
+
+  function fwExplode(x, y, count){
+    var colors = [
+      'rgba(255,107,107,1)','rgba(255,217,61,1)','rgba(71,183,135,1)',
+      'rgba(108,92,231,1)','rgba(255,142,83,1)','rgba(253,121,168,1)',
+      'rgba(162,155,254,1)','rgba(0,206,201,1)'
+    ];
+    for(var i=0; i<(count||40); i++){
+      fwParticles.push({
+        x:x, y:y,
+        vx:(Math.random()-0.5)*8, vy:(Math.random()-0.5)*8-2,
+        color:colors[Math.floor(Math.random()*colors.length)],
+        alpha:1, decay:0.012+Math.random()*0.02,
+        size:2+Math.random()*4, gravity:0.08, trail:[]
+      });
+    }
+  }
+
+  function fwAnimate(){
+    if(!fwCtx) return;
+    fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
+    fwParticles = fwParticles.filter(function(p){ return p.alpha > 0; });
+    for(var i=0; i<fwParticles.length; i++){
+      var p = fwParticles[i];
+      p.trail.push({x:p.x, y:p.y, a:p.alpha});
+      if(p.trail.length > 5) p.trail.shift();
+      p.x += p.vx; p.y += p.vy; p.vy += p.gravity; p.alpha -= p.decay;
+      // Trail
+      for(var j=0; j<p.trail.length; j++){
+        var t = p.trail[j];
+        fwCtx.beginPath(); fwCtx.arc(t.x, t.y, p.size*0.5, 0, Math.PI*2);
+        fwCtx.fillStyle = p.color.replace('1)', (t.a*0.25)+')'); fwCtx.fill();
+      }
+      // Particle
+      fwCtx.beginPath(); fwCtx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+      fwCtx.fillStyle = p.color.replace('1)', p.alpha+')'); fwCtx.fill();
+    }
+    if(fwRunning || fwParticles.length > 0) fwAnimId = requestAnimationFrame(fwAnimate);
+  }
+
+  function startFireworks(){
+    if(!fwCanvas) initFireworks();
+    fwRunning = true;
+    if(!fwAnimId) fwAnimate();
+    var burst = function(){
+      if(!fwRunning) return;
+      var x = Math.random() * fwCanvas.width;
+      var y = Math.random() * fwCanvas.height * 0.55 + fwCanvas.height * 0.1;
+      fwExplode(x, y, 30 + Math.floor(Math.random()*30));
+      setTimeout(burst, 250 + Math.random()*400);
+    };
+    burst();
+    setTimeout(function(){ fwRunning = false; }, 8000);
+  }
+
+  window.showEasterScore = function(){
+    if(!fwCanvas) initFireworks();
+    $("easter-score").classList.add("show");
+    startFireworks();
+  };
+  window.closeEasterScore = function(){
+    $("easter-score").classList.remove("show");
+    fwRunning = false;
+  };
+
 })();
