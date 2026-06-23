@@ -135,11 +135,6 @@
     $("dense-entry").querySelector(".dense-card").addEventListener("click",function(){
       window.location.href = "macula-densa/index.html";
     });
-    // 学习通选择 — 单选题库
-    $("xuanku-entry").innerHTML = '<div class="xuanku-card">学习通选择</div>';
-    $("xuanku-entry").querySelector(".xuanku-card").addEventListener("click",function(){
-      window.location.href = "xuanku/index.html";
-    });
   }
 
   // ---------- 打开资料 → 模式页 ----------
