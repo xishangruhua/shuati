@@ -163,13 +163,9 @@ function resetBoxes(){
   document.getElementById("result").textContent="选一个盒子吧～";
 }
 function openBox(idx){
-  if(opened)return;
-  opened=true;
-  var boxes=document.querySelectorAll(".box-item");
-  for(var i=0;i<boxes.length;i++){
-    if(i===idx)boxes[i].classList.add("open");
-    else boxes[i].classList.add("disabled");
-  }
+  var box=document.querySelectorAll(".box-item")[idx];
+  if(box.classList.contains("open"))return;
+  box.classList.add("open");
   var res=document.getElementById("result");
   res.textContent=chosen[idx].n;
   res.classList.remove("pop");void res.offsetWidth;res.classList.add("pop");
