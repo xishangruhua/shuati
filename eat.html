@@ -48,13 +48,6 @@ html,body{min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg
 .btn-row button:active{transform:translateY(0)}
 .btn-row button:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(30,60,40,.12)}
 .btn-row button:disabled{opacity:.5;cursor:default;pointer-events:none}
-
-.history-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;width:100%;box-shadow:0 2px 8px rgba(30,60,40,.06)}
-.history-title{font-size:.9rem;font-weight:600;color:#3a463f;margin-bottom:10px}
-.history-list{display:flex;flex-wrap:wrap;gap:6px}
-.history-item{padding:4px 10px;background:var(--accent-soft);border-radius:10px;font-size:.8rem;color:#2f7a4a;font-weight:500}
-.history-item.hidden-item{background:linear-gradient(135deg,#ffe0e0,#ffe8c0);color:#c0392b;font-weight:700}
-.history-empty{font-size:.82rem;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -100,10 +93,6 @@ html,body{min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg
   </div>
   <div class="btn-row">
     <button id="refreshBtn">🔄 重新选</button>
-  </div>
-  <div class="history-card">
-    <div class="history-title">📋 抽中记录</div>
-    <div class="history-list" id="historyList"><span class="history-empty">暂无记录</span></div>
   </div>
 </div>
 
@@ -187,7 +176,7 @@ var foods=[
 
 var FEEDBACK_TOKEN="c0f2915a5dda41758fa37716b551a4fd";
 var HIDDEN_RATE=15;
-var cat="all", chosen=[], hiddenIdx=-1, history=[];
+var cat="all", chosen=[], hiddenIdx=-1;
 
 function filtered(){ return cat==="all"?foods:foods.filter(function(f){return f.c===cat}) }
 function pick3(){
@@ -227,17 +216,6 @@ function resetBoxes(){
   document.getElementById("refreshBtn").disabled=false;
 }
 
-function addHistory(name, isHidden){
-  history.unshift({n:name, hidden:isHidden});
-  if(history.length>50)history.pop();
-  var h=document.getElementById("historyList");
-  var html="";
-  for(var i=0;i<history.length;i++){
-    html+='<div class="history-item'+(history[i].hidden?' hidden-item':'')+'">'+(history[i].hidden?'🧋 ':'')+history[i].n+'</div>';
-  }
-  h.innerHTML=html||'<span class="history-empty">暂无记录</span>';
-}
-
 var currentResult="";
 
 function openBox(idx){
@@ -249,7 +227,6 @@ function openBox(idx){
     currentResult="🧋 请你喝奶茶！";
     document.getElementById("result").textContent=currentResult;
     document.getElementById("result").className="hidden-result";
-    addHistory("🧋 请你喝奶茶！", true);
     pushNotify();
   }else{
     currentResult=chosen[idx].n;
@@ -257,7 +234,6 @@ function openBox(idx){
     el.textContent=currentResult;
     el.className="result-food";
     el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
-    addHistory(chosen[idx].n, false);
   }
   return true;
 }
