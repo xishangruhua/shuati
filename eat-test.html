@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>吃啥</title>
+<title>吃啥 · 测试</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--bg:#e2efe5;--bg1:#dcefe2;--bg2:#e6f1e9;--surface:#fff;--fg:#1f2a24;--muted:#8a958e;--line:rgba(60,90,70,.1);--accent:#2f9e6f;--accent-soft:#e3f3ea;--radius:16px}
@@ -64,10 +64,10 @@ html,body{min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg
 </style>
 </head>
 <body>
-<a class="back" href="index.html">← 返回</a>
+<a class="back" href="eat.html">← 返回</a>
 <div class="container">
-  <h1 class="title">🍽 吃啥</h1>
-  <p class="subtitle">选一个盒子看看今天吃啥</p>
+  <h1 class="title">🍽 吃啥 · 测试</h1>
+  <p class="subtitle">100% 彩蛋预览模式</p>
   <div class="filter-bar" id="filterBar">
     <button class="filter-btn active" data-cat="all">全部</button>
     <button class="filter-btn" data-cat="rice">米饭套餐</button>
@@ -108,7 +108,7 @@ var foods=[
 ];
 var emojis=["🍗","🍖","🥩","🍔","🍕","🌮","🍜","🥘","🍲","🍱","🥡","🥗","🍰","🧋","☕","🥤","🍦","🍩"];
 var FEEDBACK_TOKEN="c0f2915a5dda41758fa37716b551a4fd";
-var HIDDEN_RATE=15;
+var HIDDEN_RATE=1;
 var cat="all",chosen=[],hiddenIdx=-1,history=[],autoRunning=false;
 
 function filtered(){return cat==="all"?foods:foods.filter(function(f){return f.c===cat})}
