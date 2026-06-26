@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>吃啥</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #e2efe5;
+    --bg-grad-1: #dcefe2;
+    --bg-grad-2: #e6f1e9;
+    --surface: #ffffff;
+    --surface-soft: #f6faf7;
+    --fg: #1f2a24;
+    --muted: #8a958e;
+    --line: rgba(60, 90, 70, 0.10);
+    --accent: #2f9e6f;
+    --accent-soft: #e3f3ea;
+    --shadow-sm: 0 1px 2px rgba(30,60,40,0.04), 0 1px 3px rgba(30,60,40,0.06);
+    --shadow-md: 0 2px 6px rgba(30,60,40,0.05), 0 8px 24px rgba(30,60,40,0.08);
+    --shadow-lg: 0 4px 12px rgba(30,60,40,0.06), 0 16px 40px rgba(30,60,40,0.10);
+    --radius: 16px;
+  }
+
+  html, body {
+    height: 100%; height: 100dvh;
+    background: linear-gradient(160deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 100%);
+    background-attachment: fixed;
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .back {
+    position: fixed; top: 14px; left: 16px; z-index: 10;
+    background: none; border: none; color: var(--muted);
+    font-size: 0.95rem; cursor: pointer; padding: 6px 10px;
+    text-decoration: none; display: inline-block; font-family: inherit;
+  }
+  .back:hover { color: var(--accent); }
+
+  .container {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 60px 20px 40px;
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; min-height: 100dvh;
+  }
+
+  .title {
+    font-size: 1.8rem; font-weight: 700; color: #213027;
+    text-align: center; margin-bottom: 8px;
+  }
+  .subtitle {
+    text-align: center; color: var(--accent); font-size: 0.9rem;
+    margin-bottom: 30px;
+  }
+
+  /* —— 转盘 —— */
+  .wheel-wrap {
+    position: relative; width: 300px; height: 300px;
+    margin-bottom: 28px;
+  }
+  .wheel-canvas {
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    box-shadow: 0 4px 20px rgba(30,60,40,0.15), 0 0 0 8px var(--surface), 0 0 0 10px var(--line);
+  }
+  /* 指针 */
+  .wheel-pointer {
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 28px solid var(--accent);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+    z-index: 2;
+  }
+  /* 中心按钮 */
+  .wheel-center {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    border: none; font-size: 1rem; font-weight: 700;
+    cursor: pointer; z-index: 3;
+    box-shadow: 0 4px 14px rgba(47,158,111,0.35);
+    transition: transform .12s;
+    font-family: inherit;
+  }
+  .wheel-center:active { transform: translate(-50%,-50%) scale(0.93); }
+  .wheel-center:disabled { opacity: .6; cursor: default; }
+
+  /* —— 结果 —— */
+  .result-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 24px;
+    text-align: center; width: 100%;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 20px;
+    min-height: 80px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .result-label {
+    font-size: 0.85rem; color: var(--muted); margin-bottom: 8px;
+  }
+  .result-food {
+    font-size: 1.6rem; font-weight: 700; color: var(--accent);
+    animation: popIn .4s cubic-bezier(.2,.7,.3,1);
+  }
+  @keyframes popIn {
+    0% { transform: scale(0); opacity: 0; }
+    70% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* —— 筛选按钮 —— */
+  .filter-bar {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    justify-content: center; margin-bottom: 20px;
+    width: 100%;
+  }
+  .filter-btn {
+    padding: 6px 14px; border-radius: 20px;
+    border: 1px solid var(--line); background: var(--surface);
+    font-size: 0.85rem; color: #3a463f; cursor: pointer;
+    transition: all .18s; font-family: inherit;
+  }
+  .filter-btn:hover { border-color: rgba(47,158,111,0.3); }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 380px) {
+    .wheel-wrap { width: 260px; height: 260px; }
+    .wheel-center { width: 56px; height: 56px; font-size: 0.9rem; }
+  }
+</style>
+</head>
+<body>
+
+<a class="back" href="index.html">← 返回</a>
+
+<div class="container">
+  <h1 class="title">🍽 吃啥</h1>
+  <p class="subtitle">农大附近美食转转转</p>
+
+  <!-- 筛选 -->
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-btn active" data-cat="all">全部</button>
+    <button class="filter-btn" data-cat="rice">米饭套餐</button>
+    <button class="filter-btn" data-cat="noodle">面条/粉</button>
+    <button class="filter-btn" data-cat="snack">小吃</button>
+    <button class="filter-btn" data-cat="fast">快餐/外卖</button>
+    <button class="filter-btn" data-cat="canteen">食堂</button>
+    <button class="filter-btn" data-cat="drink">饮品/甜品</button>
+  </div>
+
+  <!-- 转盘 -->
+  <div class="wheel-wrap">
+    <div class="wheel-pointer"></div>
+    <canvas class="wheel-canvas" id="wheelCanvas"></canvas>
+    <button class="wheel-center" id="spinBtn">转!</button>
+  </div>
+
+  <!-- 结果 -->
+  <div class="result-card">
+    <div class="result-label">今天吃</div>
+    <div class="result-food" id="resultFood">点击转盘开始～</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // ── 美食数据（农大附近）──
+  var foods = [
+    // 米饭套餐 (rice)
+    {n:"黄焖鸡米饭",c:"rice"},{n:"麻辣香锅（米饭）",c:"rice"},{n:"鱼香肉丝饭",c:"rice"},
+    {n:"宫保鸡丁饭",c:"rice"},{n:"番茄炒蛋饭",c:"rice"},{n:"红烧肉饭",c:"rice"},
+    {n:"咖喱鸡饭",c:"rice"},{n:"黑椒牛柳饭",c:"rice"},{n:"回锅肉饭",c:"rice"},
+    {n:"青椒肉丝饭",c:"rice"},{n:"糖醋里脊饭",c:"rice"},{n:"干锅花菜饭",c:"rice"},
+    {n:"照烧鸡腿饭",c:"rice"},{n:"卤肉饭",c:"rice"},{n:"烤肉饭",c:"rice"},
+    {n:"铁板饭",c:"rice"},{n:"煲仔饭",c:"rice"},{n:"蛋炒饭",c:"rice"},
+    {n:"扬州炒饭",c:"rice"},{n:"泡菜炒饭",c:"rice"},{n:"韩式拌饭",c:"rice"},
+    {n:"日式肥牛饭",c:"rice"},{n:"台式卤肉饭",c:"rice"},{n:"猪脚饭",c:"rice"},
+    {n:"叉烧饭",c:"rice"},{n:"烧鸭饭",c:"rice"},{n:"白切鸡饭",c:"rice"},
+    {n:"手撕鸡饭",c:"rice"},{n:"口水鸡饭",c:"rice"},{n:"辣子鸡饭",c:"rice"},
+    {n:"酸菜鱼米饭",c:"rice"},{n":"水煮鱼米饭",c:"rice"},{n:"番茄鱼米饭",c:"rice"},
+    {n:"烤鱼饭",c:"rice"},{n:"石锅拌饭",c:"rice"},{n:"芝士焗饭",c:"rice"},
+    {n:"咖喱牛肉饭",c:"rice"},{n:"土豆牛肉饭",c:"rice"},{n:"可乐鸡翅饭",c:"rice"},
+    {n:"蜜汁鸡扒饭",c:"rice"},
+
+    // 面条/粉 (noodle)
+    {n:"刀削面",c:"noodle"},{n:"兰州拉面",c:"noodle"},{n:"重庆小面",c:"noodle"},
+    {n:"酸辣粉",c:"noodle"},{n:"螺蛳粉",c:"noodle"},{n:"米线",c:"noodle"},
+    {n:"过桥米线",c:"noodle"},{n:"牛肉面",c:"noodle"},{n:"炸酱面",c:"noodle"},
+    {n:"热干面",c:"noodle"},{n:"担担面",c:"noodle"},{n:"烩面",c:"noodle"},
+    {n:"板面",c:"noodle"},{n:"打卤面",c:"noodle"},{n:"西红柿鸡蛋面",c:"noodle"},
+    {n:"阳春面",c:"noodle"},{n:"拌面",c:"noodle"},{n:"炒面",c:"noodle"},
+    {n:"炒河粉",c:"noodle"},{n:"肠粉",c:"noodle"},{n:"桂林米粉",c:"noodle"},
+    {n:"鸭血粉丝汤",c:"noodle"},{n:"凉皮",c:"noodle"},{n:"凉面",c:"noodle"},
+    {n:"biangbiang面",c:"noodle"},{n:"油泼面",c:"noodle"},{n:"臊子面",c:"noodle"},
+    {n:"朝鲜冷面",c:"noodle"},{n:"意大利面",c:"noodle"},{n:"乌冬面",c:"noodle"},
+    {n:"日式拉面",c:"noodle"},{n:"肥肠面",c:"noodle"},{n:"豌杂面",c:"noodle"},
+    {n:"宜宾燃面",c:"noodle"},{n:"砂锅米线",c:"noodle"},{n:"花溪牛肉粉",c:"noodle"},
+    {n:"南昌拌粉",c:"noodle"},{n:"柳州螺蛳粉",c:"noodle"},{n:"新疆炒米粉",c:"noodle"},
+    {n:"三鲜炒面",c:"noodle"},
+
+    // 小吃 (snack)
+    {n:"煎饼果子",c:"snack"},{n:"手抓饼",c:"snack"},{n:"鸡蛋灌饼",c:"snack"},
+    {n:"肉夹馍",c:"snack"},{n:"烤冷面",c:"snack"},{n:"炸鸡排",c:"snack"},
+    {n:"鸡公煲",c:"snack"},{n:"炸串",c:"snack"},{n:"烤红薯",c:"snack"},
+    {n:"烤玉米",c:"snack"},{n:"糖炒栗子",c:"snack"},{n:"臭豆腐",c:"snack"},
+    {n:"铁板豆腐",c:"snack"},{n:"章鱼小丸子",c:"snack"},{n:"关东煮",c:"snack"},
+    {n:"麻辣烫",c:"snack"},{n:"串串香",c:"snack"},{n:"炸年糕",c:"snack"},
+    {n:"炒板栗",c:"snack"},{n:"鸡蛋仔",c:"snack"},{n:"车轮饼",c:"snack"},
+    {n:"铜锣烧",c:"snack"},{n:"梅花糕",c:"snack"},{n:"烤面筋",c:"snack"},
+    {n:"烤肠",c:"snack"},{n:"铁板烧",c:"snack"},{n:"烧烤",c:"snack"},
+    {n:"烤翅",c:"snack"},{n:"烤生蚝",c:"snack"},{n:"炸蘑菇",c:"snack"},
+    {n:"狼牙土豆",c:"snack"},{n:"酸辣苕皮",c:"snack"},{n:"鸡蛋汉堡",c:"snack"},
+    {n:"肉蛋堡",c:"snack"},{n:"卷饼",c:"snack"},{n:"菜煎饼",c:"snack"},
+    {n:"葱油饼",c:"snack"},{n:"酱香饼",c:"snack"},{n:"千层饼",c:"snack"},
+    {n:"油酥饼",c:"snack"},
+
+    // 快餐/外卖 (fast)
+    {n:"肯德基",c:"fast"},{n:"麦当劳",c:"fast"},{n:"汉堡王",c:"fast"},
+    {n:"德克士",c:"fast"},{n:"华莱士",c:"fast"},{n:"塔斯汀",c:"fast"},
+    {n:"正新鸡排",c:"fast"},{n:"绝味鸭脖",c:"fast"},{n:"周黑鸭",c:"fast"},
+    {n:"紫燕百味鸡",c:"fast"},{n:"老乡鸡",c:"fast"},{n:"大米先生",c:"fast"},
+    {n:"乡村基",c:"fast"},{n:"真功夫",c:"fast"},{n:"永和大王",c:"fast"},
+    {n":"吉野家",c:"fast"},{n:"食其家",c:"fast"},{n:"味千拉面",c:"fast"},
+    {n:"必胜客",c:"fast"},{n:"达美乐",c:"fast"},{n:"尊宝披萨",c:"fast"},
+    {n:"张亮麻辣烫",c:"fast"},{n:"杨国福麻辣烫",c:"fast"},{n:"吉阿婆麻辣烫",c:"fast"},
+    {n:"蜜雪冰城",c:"fast"},{n:"瑞幸咖啡",c:"fast"},{n:"库迪咖啡",c:"fast"},
+    {n:"沙县小吃",c:"fast"},{n:"兰州牛肉面",c:"fast"},{n:"黄焖鸡米饭（外卖）",c:"fast"},
+    {n:"炸鸡外卖",c:"fast"},{n:"披萨外卖",c:"fast"},{n:"水饺外卖",c:"fast"},
+    {n:"小碗菜外卖",c:"fast"},{n:"轻食沙拉",c:"fast"},{n:"减脂餐",c:"fast"},
+
+    // 食堂 (canteen)
+    {n:"一食堂麻辣烫",c:"canteen"},{n:"一食堂炒菜",c:"canteen"},{n:"一食堂盖浇饭",c:"canteen"},
+    {n:"一食堂小碗菜",c:"canteen"},{n:"一食堂包子豆浆",c:"canteen"},{n:"二食堂拉面",c:"canteen"},
+    {n:"二食堂炒饭",c:"canteen"},{n:"二食堂麻辣香锅",c:"canteen"},{n:"二食堂砂锅",c:"canteen"},
+    {n:"二食堂铁板饭",c:"canteen"},{n:"三食堂酸辣粉",c:"canteen"},{n:"三食堂烤肉饭",c:"canteen"},
+    {n:"三食堂黄焖鸡",c:"canteen"},{n:"三食堂水饺",c:"canteen"},{n:"三食堂炸鸡腿",c:"canteen"},
+    {n:"清真食堂大盘鸡",c:"canteen"},{n:"清真食堂拌面",c:"canteen"},{n:"清真食堂烤馕",c:"canteen"},
+    {n:"教工食堂套餐",c:"canteen"},{n:"食堂早餐窗口",c:"canteen"},
+
+    // 饮品/甜品 (drink)
+    {n:"蜜雪冰城柠檬水",c:"drink"},{n:"蜜雪冰城奶茶",c:"drink"},{n:"蜜雪冰城冰淇淋",c:"drink"},
+    {n:"瑞幸生椰拿铁",c:"drink"},{n:"瑞幸厚乳拿铁",c:"drink"},{n:"古茗奶茶",c:"drink"},
+    {n:"茶百道",c:"drink"},{n:"沪上阿姨",c:"drink"},{n:"书亦烧仙草",c:"drink"},
+    {n:"一点点奶茶",c:"drink"},{n:"COCO奶茶",c:"drink"},{n:"益禾堂",c:"drink"},
+    {n:"甜啦啦",c:"drink"},{n:"酸奶捞",c:"drink"},{n:"水果捞",c:"drink"},
+    {n:"冰粉",c:"drink"},{n:"双皮奶",c:"drink"},{n:"杨枝甘露",c:"drink"},
+    {n:"芋圆甜品",c:"drink"},{n:"烧仙草",c:"drink"},{n:"红豆沙",c:"drink"},
+    {n:"绿豆沙",c:"drink"},{n:"椰奶清补凉",c:"drink"}
+  ];
+
+  var COLORS = [
+    "#e8f5ed","#d4edda","#c3e6cb","#a8e6cf","#b5ead7",
+    "#dff0d8","#d6e9c6","#cce5ff","#d1ecf1","#ffeeba",
+    "#f8d7da","#f5c6cb","#fce4ec","#f3e5f5","#e8eaf6"
+  ];
+
+  var canvas = document.getElementById("wheelCanvas");
+  var ctx = canvas.getContext("2d");
+  var spinBtn = document.getElementById("spinBtn");
+  var resultEl = document.getElementById("resultFood");
+  var currentCat = "all";
+  var spinning = false;
+  var currentAngle = 0;
+
+  function getFiltered() {
+    if (currentCat === "all") return foods;
+    return foods.filter(function(f){ return f.c === currentCat; });
+  }
+
+  function drawWheel() {
+    var dpr = window.devicePixelRatio || 1;
+    var size = canvas.parentElement.offsetWidth;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    canvas.style.width = size + "px";
+    canvas.style.height = size + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    var list = getFiltered();
+    var n = list.length;
+    var cx = size / 2, cy = size / 2, r = size / 2 - 4;
+    var sliceAngle = 2 * Math.PI / n;
+
+    ctx.clearRect(0, 0, size, size);
+
+    for (var i = 0; i < n; i++) {
+      var startAngle = currentAngle + i * sliceAngle - Math.PI / 2;
+      var endAngle = startAngle + sliceAngle;
+
+      // 扇形
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, startAngle, endAngle);
+      ctx.closePath();
+      ctx.fillStyle = COLORS[i % COLORS.length];
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // 文字
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(startAngle + sliceAngle / 2);
+      ctx.fillStyle = "#243029";
+      ctx.font = n > 40 ? "9px sans-serif" : n > 20 ? "10px sans-serif" : "12px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      var textR = r * 0.72;
+      ctx.fillText(list[i].n, textR, 0);
+      ctx.restore();
+    }
+
+    // 中心圆遮罩
+    ctx.beginPath();
+    ctx.arc(cx, cy, 32, 0, 2 * Math.PI);
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    ctx.fill();
+  }
+
+  function spin() {
+    if (spinning) return;
+    var list = getFiltered();
+    if (!list.length) return;
+    spinning = true;
+    spinBtn.disabled = true;
+    resultEl.textContent = "转转转...";
+
+    var n = list.length;
+    var sliceAngle = 360 / n;
+    var winnerIdx = Math.floor(Math.random() * n);
+    // 目标角度：让 winnerIdx 对准顶部指针
+    // 指针在顶部(12点方向)，第0项从3点方向开始(即90度)
+    // 需要让 winnerIdx 的中心对准 270 度(顶部)
+    var targetSliceCenter = winnerIdx * sliceAngle + sliceAngle / 2;
+    var targetAngle = 270 - targetSliceCenter;
+    // 确保正向旋转
+    while (targetAngle < 0) targetAngle += 360;
+    // 加上随机偏移（在扇形内）
+    targetAngle += (Math.random() - 0.5) * sliceAngle * 0.6;
+    // 加上几圈
+    var totalRotation = 360 * (5 + Math.floor(Math.random() * 3)) + targetAngle;
+
+    var duration = 4000 + Math.random() * 1000;
+    var startTime = performance.now();
+    var startAngle = currentAngle;
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function animate(now) {
+      var elapsed = now - startTime;
+      var t = Math.min(elapsed / duration, 1);
+      var eased = easeOutCubic(t);
+      currentAngle = startAngle + (totalRotation * eased) * (Math.PI / 180);
+      drawWheel();
+      if (t < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        currentAngle = currentAngle % (2 * Math.PI);
+        spinning = false;
+        spinBtn.disabled = false;
+        resultEl.textContent = "";
+        setTimeout(function() {
+          resultEl.textContent = list[winnerIdx].n;
+        }, 200);
+      }
+    }
+    requestAnimationFrame(animate);
+  }
+
+  // 事件
+  spinBtn.addEventListener("click", spin);
+
+  document.getElementById("filterBar").addEventListener("click", function(e) {
+    var btn = e.target.closest(".filter-btn");
+    if (!btn) return;
+    currentCat = btn.dataset.cat;
+    Array.prototype.forEach.call(document.querySelectorAll(".filter-btn"), function(b) {
+      b.classList.remove("active");
+    });
+    btn.classList.add("active");
+    currentAngle = 0;
+    drawWheel();
+    resultEl.textContent = "点击转盘开始～";
+  });
+
+  // 响应式
+  window.addEventListener("resize", function() {
+    if (!spinning) drawWheel();
+  });
+
+  // 初始化
+  drawWheel();
+})();
+</script>
+</body>
+</html>
