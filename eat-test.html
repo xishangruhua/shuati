@@ -13,11 +13,9 @@ html,body{min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg
 .container{max-width:420px;margin:0 auto;padding:60px 20px 40px;display:flex;flex-direction:column;align-items:center}
 .title{font-size:1.8rem;font-weight:700;color:#213027;text-align:center;margin-bottom:8px}
 .subtitle{text-align:center;color:var(--accent);font-size:.9rem;margin-bottom:24px}
-
 .filter-bar{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:24px;width:100%}
 .filter-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:var(--surface);font-size:.85rem;color:#3a463f;cursor:pointer;transition:all .18s;font-family:inherit}
 .filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-
 .box-area{display:flex;gap:12px;justify-content:center;margin-bottom:24px;width:100%}
 .box-wrap{position:relative;width:110px;height:130px}
 .box-item{width:110px;height:130px;perspective:500px;cursor:pointer;position:relative;z-index:1}
@@ -26,16 +24,16 @@ html,body{min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg
 .box-front,.box-back{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:16px;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .box-front img{width:100%;height:100%;object-fit:cover}
 .box-back{transform:rotateY(180deg);background:var(--surface);border:2px solid var(--accent);flex-direction:column;padding:10px}
-.box-back .food-emoji{font-size:2rem;margin-bottom:4px}
-.box-back .food-name{font-size:.82rem;font-weight:600;color:#243029;text-align:center;line-height:1.3;word-break:break-all}
+.box-back .food-emoji{font-size:2rem;margin-bottom:6px}
+.box-back .food-name{font-size:.82rem;font-weight:600;color:#243029;text-align:center;line-height:1.3}
+.box-back img.milk-tea{width:100%;height:100%;object-fit:cover;border-radius:12px}
 
 /* 隐藏盒子 */
-.box-wrap.hidden-box .box-item .box-front{border:3px solid transparent;animation:rainbowBorder 2s linear infinite}
+.box-wrap.hidden-box .box-front{border:3px solid transparent;animation:rainbowBorder 2s linear infinite}
 @keyframes rainbowBorder{
   0%{border-color:#ff6b6b}16%{border-color:#ffd93d}33%{border-color:#6c5ce7}50%{border-color:#00d2d3}66%{border-color:#ff9ff3}83%{border-color:#ff6348}100%{border-color:#ff6b6b}
 }
-.box-wrap.hidden-box .box-back{border:3px solid transparent;animation:rainbowBorder 2s linear infinite}
-.hidden-marker{position:absolute;top:-12px;right:-8px;z-index:5;font-size:1.5rem;animation:floatIcon 1.5s ease-in-out infinite;text-shadow:0 2px 8px rgba(255,170,0,.4)}
+.hidden-marker{position:absolute;top:-12px;right:-8px;z-index:5;animation:floatIcon 1.5s ease-in-out infinite}
 @keyframes floatIcon{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 .hidden-marker img{width:36px;height:36px;border-radius:50%;box-shadow:0 2px 10px rgba(255,150,0,.4)}
 
@@ -43,7 +41,6 @@ html,body{min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg
 .result-label{font-size:.85rem;color:var(--muted);margin-bottom:6px}
 .result-food{font-size:1.5rem;font-weight:700;color:var(--accent)}
 @keyframes pop{0%{transform:scale(0);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
-.pop{animation:pop .4s cubic-bezier(.2,.7,.3,1)}
 .hidden-result{font-size:1.5rem;font-weight:700;animation:pop .4s cubic-bezier(.2,.7,.3,1);background:linear-gradient(135deg,#ff6b6b,#ffd93d,#6c5ce7,#00d2d3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 
 .btn-row{display:flex;gap:12px;width:100%;justify-content:center;margin-bottom:20px}
@@ -52,22 +49,19 @@ html,body{min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg
 .btn-row button:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(30,60,40,.12)}
 .btn-row button:disabled{opacity:.5;cursor:default;pointer-events:none}
 
-/* 抽中列表 */
 .history-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;width:100%;box-shadow:0 2px 8px rgba(30,60,40,.06)}
 .history-title{font-size:.9rem;font-weight:600;color:#3a463f;margin-bottom:10px}
 .history-list{display:flex;flex-wrap:wrap;gap:6px}
 .history-item{padding:4px 10px;background:var(--accent-soft);border-radius:10px;font-size:.8rem;color:#2f7a4a;font-weight:500}
+.history-item.hidden-item{background:linear-gradient(135deg,#ffe0e0,#ffe8c0);color:#c0392b;font-weight:700}
 .history-empty{font-size:.82rem;color:var(--muted)}
-
-.toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(47,158,111,.95);color:#fff;padding:10px 28px;border-radius:12px;font-size:.95rem;font-weight:500;box-shadow:0 4px 20px rgba(47,158,111,.3);opacity:0;transition:opacity .3s,transform .3s;z-index:999;pointer-events:none}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
 <a class="back" href="eat.html">← 返回</a>
 <div class="container">
   <h1 class="title">🍽 吃啥 · 测试</h1>
-  <p class="subtitle">100% 彩蛋预览模式</p>
+  <p class="subtitle">100% 彩蛋预览</p>
   <div class="filter-bar" id="filterBar">
     <button class="filter-btn active" data-cat="all">全部</button>
     <button class="filter-btn" data-cat="rice">米饭套餐</button>
@@ -78,9 +72,27 @@ html,body{min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg
     <button class="filter-btn" data-cat="drink">饮品/甜品</button>
   </div>
   <div class="box-area" id="boxArea">
-    <div class="box-wrap" data-idx="0"><div class="hidden-marker" style="display:none"><img src="hidden-icon.png" alt=""></div><div class="box-item"><div class="box-inner"><div class="box-front"><img src="box-img.png" alt="盒子"></div><div class="box-back"><div class="food-emoji"></div><div class="food-name"></div></div></div></div></div>
-    <div class="box-wrap" data-idx="1"><div class="hidden-marker" style="display:none"><img src="hidden-icon.png" alt=""></div><div class="box-item"><div class="box-inner"><div class="box-front"><img src="box-img.png" alt="盒子"></div><div class="box-back"><div class="food-emoji"></div><div class="food-name"></div></div></div></div></div>
-    <div class="box-wrap" data-idx="2"><div class="hidden-marker" style="display:none"><img src="hidden-icon.png" alt=""></div><div class="box-item"><div class="box-inner"><div class="box-front"><img src="box-img.png" alt="盒子"></div><div class="box-back"><div class="food-emoji"></div><div class="food-name"></div></div></div></div></div>
+    <div class="box-wrap" data-idx="0">
+      <div class="hidden-marker" style="display:none"><img src="hidden-icon.png" alt=""></div>
+      <div class="box-item"><div class="box-inner">
+        <div class="box-front"><img src="box-img.png" alt="盒子"></div>
+        <div class="box-back"></div>
+      </div></div>
+    </div>
+    <div class="box-wrap" data-idx="1">
+      <div class="hidden-marker" style="display:none"><img src="hidden-icon.png" alt=""></div>
+      <div class="box-item"><div class="box-inner">
+        <div class="box-front"><img src="box-img.png" alt="盒子"></div>
+        <div class="box-back"></div>
+      </div></div>
+    </div>
+    <div class="box-wrap" data-idx="2">
+      <div class="hidden-marker" style="display:none"><img src="hidden-icon.png" alt=""></div>
+      <div class="box-item"><div class="box-inner">
+        <div class="box-front"><img src="box-img.png" alt="盒子"></div>
+        <div class="box-back"></div>
+      </div></div>
+    </div>
   </div>
   <div class="result-card">
     <div class="result-label">今天吃</div>
@@ -95,116 +107,209 @@ html,body{min-height:100vh;background:linear-gradient(160deg,var(--bg1),var(--bg
     <div class="history-list" id="historyList"><span class="history-empty">暂无记录</span></div>
   </div>
 </div>
-<div class="toast" id="toast"></div>
 
 <script>
+// ====== 数据 ======
 var foods=[
-{n:"黄焖鸡米饭",c:"rice"},{n:"麻辣香锅",c:"rice"},{n:"鱼香肉丝饭",c:"rice"},{n:"宫保鸡丁饭",c:"rice"},{n:"番茄炒蛋饭",c:"rice"},{n:"红烧肉饭",c:"rice"},{n:"咖喱鸡饭",c:"rice"},{n:"黑椒牛柳饭",c:"rice"},{n:"回锅肉饭",c:"rice"},{n:"青椒肉丝饭",c:"rice"},{n:"糖醋里脊饭",c:"rice"},{n:"干锅花菜饭",c:"rice"},{n:"照烧鸡腿饭",c:"rice"},{n:"卤肉饭",c:"rice"},{n:"烤肉饭",c:"rice"},{n:"铁板饭",c:"rice"},{n:"煲仔饭",c:"rice"},{n:"蛋炒饭",c:"rice"},{n:"扬州炒饭",c:"rice"},{n:"泡菜炒饭",c:"rice"},{n:"韩式拌饭",c:"rice"},{n:"日式肥牛饭",c:"rice"},{n:"台式卤肉饭",c:"rice"},{n:"猪脚饭",c:"rice"},{n:"叉烧饭",c:"rice"},{n:"烧鸭饭",c:"rice"},{n:"白切鸡饭",c:"rice"},{n:"手撕鸡饭",c:"rice"},{n:"口水鸡饭",c:"rice"},{n:"辣子鸡饭",c:"rice"},{n:"酸菜鱼米饭",c:"rice"},{n:"水煮鱼米饭",c:"rice"},{n:"番茄鱼米饭",c:"rice"},{n:"烤鱼饭",c:"rice"},{n:"石锅拌饭",c:"rice"},{n:"芝士焗饭",c:"rice"},{n:"咖喱牛肉饭",c:"rice"},{n:"土豆牛肉饭",c:"rice"},{n:"可乐鸡翅饭",c:"rice"},{n:"蜜汁鸡扒饭",c:"rice"},
-{n:"刀削面",c:"noodle"},{n:"兰州拉面",c:"noodle"},{n:"重庆小面",c:"noodle"},{n:"酸辣粉",c:"noodle"},{n:"螺蛳粉",c:"noodle"},{n:"米线",c:"noodle"},{n:"过桥米线",c:"noodle"},{n:"牛肉面",c:"noodle"},{n:"炸酱面",c:"noodle"},{n:"热干面",c:"noodle"},{n:"担担面",c:"noodle"},{n:"烩面",c:"noodle"},{n:"板面",c:"noodle"},{n:"打卤面",c:"noodle"},{n:"西红柿鸡蛋面",c:"noodle"},{n:"阳春面",c:"noodle"},{n:"拌面",c:"noodle"},{n:"炒面",c:"noodle"},{n:"炒河粉",c:"noodle"},{n:"肠粉",c:"noodle"},{n:"桂林米粉",c:"noodle"},{n:"鸭血粉丝汤",c:"noodle"},{n:"凉皮",c:"noodle"},{n:"凉面",c:"noodle"},{n:"油泼面",c:"noodle"},{n:"臊子面",c:"noodle"},{n:"朝鲜冷面",c:"noodle"},{n:"意大利面",c:"noodle"},{n:"乌冬面",c:"noodle"},{n:"日式拉面",c:"noodle"},{n:"肥肠面",c:"noodle"},{n:"豌杂面",c:"noodle"},{n:"宜宾燃面",c:"noodle"},{n:"砂锅米线",c:"noodle"},{n:"花溪牛肉粉",c:"noodle"},{n:"南昌拌粉",c:"noodle"},{n:"新疆炒米粉",c:"noodle"},{n:"三鲜炒面",c:"noodle"},
-{n:"煎饼果子",c:"snack"},{n:"手抓饼",c:"snack"},{n:"鸡蛋灌饼",c:"snack"},{n:"肉夹馍",c:"snack"},{n:"烤冷面",c:"snack"},{n:"炸鸡排",c:"snack"},{n:"鸡公煲",c:"snack"},{n:"炸串",c:"snack"},{n:"烤红薯",c:"snack"},{n:"烤玉米",c:"snack"},{n:"糖炒栗子",c:"snack"},{n:"臭豆腐",c:"snack"},{n:"铁板豆腐",c:"snack"},{n:"章鱼小丸子",c:"snack"},{n:"关东煮",c:"snack"},{n:"麻辣烫",c:"snack"},{n:"串串香",c:"snack"},{n:"炸年糕",c:"snack"},{n:"鸡蛋仔",c:"snack"},{n:"车轮饼",c:"snack"},{n:"铜锣烧",c:"snack"},{n:"梅花糕",c:"snack"},{n:"烤面筋",c:"snack"},{n:"烤肠",c:"snack"},{n:"铁板烧",c:"snack"},{n:"烧烤",c:"snack"},{n:"烤翅",c:"snack"},{n:"炸蘑菇",c:"snack"},{n:"狼牙土豆",c:"snack"},{n:"酸辣苕皮",c:"snack"},{n:"鸡蛋汉堡",c:"snack"},{n:"肉蛋堡",c:"snack"},{n:"卷饼",c:"snack"},{n:"菜煎饼",c:"snack"},{n:"葱油饼",c:"snack"},{n:"酱香饼",c:"snack"},{n:"千层饼",c:"snack"},{n:"油酥饼",c:"snack"},
-{n:"肯德基",c:"fast"},{n:"麦当劳",c:"fast"},{n:"汉堡王",c:"fast"},{n:"德克士",c:"fast"},{n:"华莱士",c:"fast"},{n:"塔斯汀",c:"fast"},{n:"正新鸡排",c:"fast"},{n:"绝味鸭脖",c:"fast"},{n:"周黑鸭",c:"fast"},{n:"紫燕百味鸡",c:"fast"},{n:"老乡鸡",c:"fast"},{n:"大米先生",c:"fast"},{n:"乡村基",c:"fast"},{n:"真功夫",c:"fast"},{n:"永和大王",c:"fast"},{n:"吉野家",c:"fast"},{n:"食其家",c:"fast"},{n:"味千拉面",c:"fast"},{n:"必胜客",c:"fast"},{n:"达美乐",c:"fast"},{n:"尊宝披萨",c:"fast"},{n:"张亮麻辣烫",c:"fast"},{n:"杨国福麻辣烫",c:"fast"},{n:"吉阿婆麻辣烫",c:"fast"},{n:"蜜雪冰城",c:"fast"},{n:"瑞幸咖啡",c:"fast"},{n:"库迪咖啡",c:"fast"},{n:"沙县小吃",c:"fast"},{n:"兰州牛肉面",c:"fast"},{n:"炸鸡外卖",c:"fast"},{n:"披萨外卖",c:"fast"},{n:"水饺外卖",c:"fast"},{n:"小碗菜外卖",c:"fast"},{n:"轻食沙拉",c:"fast"},{n:"减脂餐",c:"fast"},
-{n:"一食堂麻辣烫",c:"canteen"},{n:"一食堂炒菜",c:"canteen"},{n:"一食堂盖浇饭",c:"canteen"},{n:"一食堂小碗菜",c:"canteen"},{n:"一食堂包子豆浆",c:"canteen"},{n:"二食堂拉面",c:"canteen"},{n:"二食堂炒饭",c:"canteen"},{n:"二食堂麻辣香锅",c:"canteen"},{n:"二食堂砂锅",c:"canteen"},{n:"二食堂铁板饭",c:"canteen"},{n:"三食堂酸辣粉",c:"canteen"},{n:"三食堂烤肉饭",c:"canteen"},{n:"三食堂黄焖鸡",c:"canteen"},{n:"三食堂水饺",c:"canteen"},{n:"三食堂炸鸡腿",c:"canteen"},{n:"清真食堂大盘鸡",c:"canteen"},{n:"清真食堂拌面",c:"canteen"},{n:"清真食堂烤馕",c:"canteen"},{n:"教工食堂套餐",c:"canteen"},{n:"食堂早餐窗口",c:"canteen"},
-{n:"蜜雪冰城柠檬水",c:"drink"},{n:"蜜雪冰城奶茶",c:"drink"},{n:"蜜雪冰城冰淇淋",c:"drink"},{n:"瑞幸生椰拿铁",c:"drink"},{n:"瑞幸厚乳拿铁",c:"drink"},{n:"古茗奶茶",c:"drink"},{n:"茶百道",c:"drink"},{n:"沪上阿姨",c:"drink"},{n:"书亦烧仙草",c:"drink"},{n:"一点点奶茶",c:"drink"},{n:"COCO奶茶",c:"drink"},{n:"益禾堂",c:"drink"},{n:"甜啦啦",c:"drink"},{n:"酸奶捞",c:"drink"},{n:"水果捞",c:"drink"},{n:"冰粉",c:"drink"},{n:"双皮奶",c:"drink"},{n:"杨枝甘露",c:"drink"},{n:"芋圆甜品",c:"drink"},{n:"烧仙草",c:"drink"},{n:"红豆沙",c:"drink"},{n:"绿豆沙",c:"drink"},{n:"椰奶清补凉",c:"drink"}
+// rice - 🍚🥘🍛🍗🥩
+{n:"黄焖鸡米饭",c:"rice",e:"🍗"},{n:"麻辣香锅",c:"rice",e:"🥘"},{n:"鱼香肉丝饭",c:"rice",e:"🍚"},
+{n:"宫保鸡丁饭",c:"rice",e:"🍚"},{n:"番茄炒蛋饭",c:"rice",e:"🍳"},{n:"红烧肉饭",c:"rice",e:"🥩"},
+{n:"咖喱鸡饭",c:"rice",e:"🍛"},{n:"黑椒牛柳饭",c:"rice",e:"🥩"},{n:"回锅肉饭",c:"rice",e:"🥓"},
+{n:"青椒肉丝饭",c:"rice",e:"🍚"},{n:"糖醋里脊饭",c:"rice",e:"🍚"},{n:"干锅花菜饭",c:"rice",e:"🍚"},
+{n:"照烧鸡腿饭",c:"rice",e:"🍗"},{n:"卤肉饭",c:"rice",e:"🍖"},{n:"烤肉饭",c:"rice",e:"🍖"},
+{n:"铁板饭",c:"rice",e:"🍚"},{n:"煲仔饭",c:"rice",e:"🍲"},{n:"蛋炒饭",c:"rice",e:"🍳"},
+{n:"扬州炒饭",c:"rice",e:"🍚"},{n:"泡菜炒饭",c:"rice",e:"🍚"},{n:"韩式拌饭",c:"rice",e:"🍚"},
+{n:"日式肥牛饭",c:"rice",e:"🍱"},{n:"台式卤肉饭",c:"rice",e:"🍖"},{n:"猪脚饭",c:"rice",e:"🍖"},
+{n:"叉烧饭",c:"rice",e:"🍖"},{n:"烧鸭饭",c:"rice",e:"🍗"},{n:"白切鸡饭",c:"rice",e:"🍗"},
+{n:"手撕鸡饭",c:"rice",e:"🍗"},{n:"口水鸡饭",c:"rice",e:"🍗"},{n:"辣子鸡饭",c:"rice",e:"🌶"},
+{n:"酸菜鱼米饭",c:"rice",e:"🐟"},{n:"水煮鱼米饭",c:"rice",e:"🐟"},{n:"番茄鱼米饭",c:"rice",e:"🐟"},
+{n:"烤鱼饭",c:"rice",e:"🐟"},{n:"石锅拌饭",c:"rice",e:"🍲"},{n:"芝士焗饭",c:"rice",e:"🧀"},
+{n:"咖喱牛肉饭",c:"rice",e:"🍛"},{n:"土豆牛肉饭",c:"rice",e:"🥔"},{n:"可乐鸡翅饭",c:"rice",e:"🍗"},
+{n:"蜜汁鸡扒饭",c:"rice",e:"🍗"},
+// noodle - 🍜🍝
+{n:"刀削面",c:"noodle",e:"🍜"},{n:"兰州拉面",c:"noodle",e:"🍜"},{n:"重庆小面",c:"noodle",e:"🍜"},
+{n:"酸辣粉",c:"noodle",e:"🍜"},{n:"螺蛳粉",c:"noodle",e:"🍜"},{n:"米线",c:"noodle",e:"🍜"},
+{n:"过桥米线",c:"noodle",e:"🍜"},{n:"牛肉面",c:"noodle",e:"🍜"},{n:"炸酱面",c:"noodle",e:"🍝"},
+{n:"热干面",c:"noodle",e:"🍝"},{n:"担担面",c:"noodle",e:"🍜"},{n:"烩面",c:"noodle",e:"🍜"},
+{n:"板面",c:"noodle",e:"🍜"},{n:"打卤面",c:"noodle",e:"🍝"},{n:"西红柿鸡蛋面",c:"noodle",e:"🍳"},
+{n:"阳春面",c:"noodle",e:"🍜"},{n:"拌面",c:"noodle",e:"🍝"},{n:"炒面",c:"noodle",e:"🍝"},
+{n:"炒河粉",c:"noodle",e:"🍝"},{n:"肠粉",c:"noodle",e:"🥟"},{n:"桂林米粉",c:"noodle",e:"🍜"},
+{n:"鸭血粉丝汤",c:"noodle",e:"🍲"},{n:"凉皮",c:"noodle",e:"🥗"},{n:"凉面",c:"noodle",e:"🍜"},
+{n:"油泼面",c:"noodle",e:"🍜"},{n:"臊子面",c:"noodle",e:"🍜"},{n:"朝鲜冷面",c:"noodle",e:"🍜"},
+{n:"意大利面",c:"noodle",e:"🍝"},{n:"乌冬面",c:"noodle",e:"🍜"},{n:"日式拉面",c:"noodle",e:"🍜"},
+{n:"肥肠面",c:"noodle",e:"🍜"},{n:"豌杂面",c:"noodle",e:"🍜"},{n:"宜宾燃面",c:"noodle",e:"🍜"},
+{n:"砂锅米线",c:"noodle",e:"🍲"},{n:"花溪牛肉粉",c:"noodle",e:"🍜"},{n:"南昌拌粉",c:"noodle",e:"🍝"},
+{n:"新疆炒米粉",c:"noodle",e:"🌶"},{n:"三鲜炒面",c:"noodle",e:"🍝"},
+// snack - 🍢🥟🌮
+{n:"煎饼果子",c:"snack",e:"🥞"},{n:"手抓饼",c:"snack",e:"🥞"},{n:"鸡蛋灌饼",c:"snack",e:"🥞"},
+{n:"肉夹馍",c:"snack",e:"🥙"},{n:"烤冷面",c:"snack",e:"🥞"},{n:"炸鸡排",c:"snack",e:"🍗"},
+{n:"鸡公煲",c:"snack",e:"🍲"},{n:"炸串",c:"snack",e:"🍢"},{n:"烤红薯",c:"snack",e:"🍠"},
+{n:"烤玉米",c:"snack",e:"🌽"},{n:"糖炒栗子",c:"snack",e:"🌰"},{n:"臭豆腐",c:"snack",e:"🧈"},
+{n:"铁板豆腐",c:"snack",e:"🧈"},{n:"章鱼小丸子",c:"snack",e:"🐙"},{n:"关东煮",c:"snack",e:"🍢"},
+{n:"麻辣烫",c:"snack",e:"🥘"},{n:"串串香",c:"snack",e:"🍢"},{n:"炸年糕",c:"snack",e:"🍡"},
+{n:"鸡蛋仔",c:"snack",e:"🧇"},{n:"车轮饼",c:"snack",e:"🥮"},{n:"铜锣烧",c:"snack",e:"🥞"},
+{n:"梅花糕",c:"snack",e:"🌸"},{n:"烤面筋",c:"snack",e:"🍢"},{n:"烤肠",c:"snack",e:"🌭"},
+{n:"铁板烧",c:"snack",e:"🥘"},{n:"烧烤",c:"snack",e:"🍖"},{n:"烤翅",c:"snack",e:"🍗"},
+{n:"炸蘑菇",c:"snack",e:"🍄"},{n:"狼牙土豆",c:"snack",e:"🍟"},{n:"酸辣苕皮",c:"snack",e:"🍜"},
+{n:"鸡蛋汉堡",c:"snack",e:"🍔"},{n:"肉蛋堡",c:"snack",e:"🍔"},{n:"卷饼",c:"snack",e:"🌯"},
+{n:"菜煎饼",c:"snack",e:"🥞"},{n:"葱油饼",c:"snack",e:"🫓"},{n:"酱香饼",c:"snack",e:"🫓"},
+{n:"千层饼",c:"snack",e:"🫓"},{n:"油酥饼",c:"snack",e:"🥮"},
+// fast - 🍔🍟🍕
+{n:"肯德基",c:"fast",e:"🍗"},{n:"麦当劳",c:"fast",e:"🍔"},{n:"汉堡王",c:"fast",e:"🍔"},
+{n:"德克士",c:"fast",e:"🍗"},{n:"华莱士",c:"fast",e:"🍔"},{n:"塔斯汀",c:"fast",e:"🍔"},
+{n:"正新鸡排",c:"fast",e:"🍗"},{n:"绝味鸭脖",c:"fast",e:"🍗"},{n:"周黑鸭",c:"fast",e:"🦆"},
+{n:"紫燕百味鸡",c:"fast",e:"🍗"},{n:"老乡鸡",c:"fast",e:"🍗"},{n:"大米先生",c:"fast",e:"🍚"},
+{n:"乡村基",c:"fast",e:"🍚"},{n:"真功夫",c:"fast",e:"🍚"},{n:"永和大王",c:"fast",e:"🥛"},
+{n:"吉野家",c:"fast",e:"🍱"},{n:"食其家",c:"fast",e:"🍱"},{n:"味千拉面",c:"fast",e:"🍜"},
+{n:"必胜客",c:"fast",e:"🍕"},{n:"达美乐",c:"fast",e:"🍕"},{n:"尊宝披萨",c:"fast",e:"🍕"},
+{n:"张亮麻辣烫",c:"fast",e:"🥘"},{n:"杨国福麻辣烫",c:"fast",e:"🥘"},{n:"吉阿婆麻辣烫",c:"fast",e:"🥘"},
+{n:"蜜雪冰城",c:"fast",e:"🍦"},{n:"瑞幸咖啡",c:"fast",e:"☕"},{n:"库迪咖啡",c:"fast",e:"☕"},
+{n:"沙县小吃",c:"fast",e:"🥟"},{n:"兰州牛肉面",c:"fast",e:"🍜"},{n:"炸鸡外卖",c:"fast",e:"🍗"},
+{n:"披萨外卖",c:"fast",e:"🍕"},{n:"水饺外卖",c:"fast",e:"🥟"},{n:"小碗菜外卖",c:"fast",e:"🍱"},
+{n:"轻食沙拉",c:"fast",e:"🥗"},{n:"减脂餐",c:"fast",e:"🥗"},
+// canteen - 🏫🍽
+{n:"一食堂麻辣烫",c:"canteen",e:"🥘"},{n:"一食堂炒菜",c:"canteen",e:"🍳"},{n:"一食堂盖浇饭",c:"canteen",e:"🍚"},
+{n:"一食堂小碗菜",c:"canteen",e:"🍱"},{n:"一食堂包子豆浆",c:"canteen",e:"🥟"},{n:"二食堂拉面",c:"canteen",e:"🍜"},
+{n:"二食堂炒饭",c:"canteen",e:"🍚"},{n:"二食堂麻辣香锅",c:"canteen",e:"🥘"},{n:"二食堂砂锅",c:"canteen",e:"🍲"},
+{n:"二食堂铁板饭",c:"canteen",e:"🍚"},{n:"三食堂酸辣粉",c:"canteen",e:"🍜"},{n:"三食堂烤肉饭",c:"canteen",e:"🍖"},
+{n:"三食堂黄焖鸡",c:"canteen",e:"🍗"},{n:"三食堂水饺",c:"canteen",e:"🥟"},{n:"三食堂炸鸡腿",c:"canteen",e:"🍗"},
+{n:"清真食堂大盘鸡",c:"canteen",e:"🍗"},{n:"清真食堂拌面",c:"canteen",e:"🍝"},{n:"清真食堂烤馕",c:"canteen",e:"🫓"},
+{n:"教工食堂套餐",c:"canteen",e:"🍱"},{n:"食堂早餐窗口",c:"canteen",e:"🥚"},
+// drink - 🧋🍰☕
+{n:"蜜雪冰城柠檬水",c:"drink",e:"🍋"},{n:"蜜雪冰城奶茶",c:"drink",e:"🧋"},{n:"蜜雪冰城冰淇淋",c:"drink",e:"🍦"},
+{n:"瑞幸生椰拿铁",c:"drink",e:"🥥"},{n:"瑞幸厚乳拿铁",c:"drink",e:"☕"},{n:"古茗奶茶",c:"drink",e:"🧋"},
+{n:"茶百道",c:"drink",e:"🧋"},{n:"沪上阿姨",c:"drink",e:"🧋"},{n:"书亦烧仙草",c:"drink",e:"🧋"},
+{n:"一点点奶茶",c:"drink",e:"🧋"},{n:"COCO奶茶",c:"drink",e:"🧋"},{n:"益禾堂",c:"drink",e:"🧋"},
+{n:"甜啦啦",c:"drink",e:"🍦"},{n:"酸奶捞",c:"drink",e:"🥛"},{n:"水果捞",c:"drink",e:"🍉"},
+{n:"冰粉",c:"drink",e:"🍧"},{n:"双皮奶",c:"drink",e:"🍮"},{n:"杨枝甘露",c:"drink",e:"🥭"},
+{n:"芋圆甜品",c:"drink",e:"🍡"},{n:"烧仙草",c:"drink",e:"🍵"},{n:"红豆沙",c:"drink",e:"🫘"},
+{n:"绿豆沙",c:"drink",e:"🍵"},{n:"椰奶清补凉",c:"drink",e:"🥥"}
 ];
-var emojis=["🍗","🍖","🥩","🍔","🍕","🌮","🍜","🥘","🍲","🍱","🥡","🥗","🍰","🧋","☕","🥤","🍦","🍩"];
+
 var FEEDBACK_TOKEN="c0f2915a5dda41758fa37716b551a4fd";
 var HIDDEN_RATE=1;
-var cat="all",chosen=[],hiddenIdx=-1,history=[],autoRunning=false;
+var cat="all", chosen=[], hiddenIdx=-1, history=[];
 
-function filtered(){return cat==="all"?foods:foods.filter(function(f){return f.c===cat})}
+function filtered(){ return cat==="all"?foods:foods.filter(function(f){return f.c===cat}) }
 function pick3(){
-  var L=filtered();if(L.length<3)return;
-  var arr=[],used={};
-  while(arr.length<3){var i=Math.floor(Math.random()*L.length);if(!used[i]){used[i]=1;arr.push(L[i])}}
+  var L=filtered(); if(L.length<3) return [];
+  var arr=[], used={};
+  while(arr.length<3){ var i=Math.floor(Math.random()*L.length); if(!used[i]){used[i]=1;arr.push(L[i])} }
   return arr;
 }
+
+function renderBack(idx){
+  var back=document.querySelectorAll(".box-back")[idx];
+  if(idx===hiddenIdx){
+    // 隐藏：纯🧋 emoji
+    back.innerHTML='<div style="font-size:3rem">🧋</div>';
+  }else{
+    back.innerHTML='<div class="food-emoji">'+(chosen[idx]?chosen[idx].e||"🍽":"")+'</div><div class="food-name">'+(chosen[idx]?chosen[idx].n:"")+'</div>';
+  }
+}
+
 function resetBoxes(){
-  chosen=pick3()||[];
-  hiddenIdx=(Math.floor(Math.random()*HIDDEN_RATE)===0)?Math.floor(Math.random()*3):-1;
+  chosen=pick3();
+  hiddenIdx=(Math.random()<1/HIDDEN_RATE)?Math.floor(Math.random()*3):-1;
   var wraps=document.querySelectorAll(".box-wrap");
   for(var i=0;i<wraps.length;i++){
     wraps[i].classList.remove("hidden-box");
     wraps[i].querySelector(".box-item").classList.remove("open");
     wraps[i].querySelector(".hidden-marker").style.display="none";
-    wraps[i].querySelector(".food-name").textContent=chosen[i]?chosen[i].n:"";
-    wraps[i].querySelector(".food-emoji").textContent=emojis[Math.floor(Math.random()*emojis.length)];
-    wraps[i].querySelector(".food-name").className="food-name";
+    renderBack(i);
   }
   if(hiddenIdx>=0){
-    var hw=wraps[hiddenIdx];
-    hw.classList.add("hidden-box");
-    hw.querySelector(".hidden-marker").style.display="block";
+    wraps[hiddenIdx].classList.add("hidden-box");
+    wraps[hiddenIdx].querySelector(".hidden-marker").style.display="block";
   }
-  document.getElementById("result").textContent="选一个盒子吧～";
-  document.getElementById("result").className="result-food";
-  // 启用按钮
+  var el=document.getElementById("result");
+  el.textContent="选一个盒子吧～";
+  el.className="result-food";
   document.getElementById("autoBtn").disabled=false;
   document.getElementById("refreshBtn").disabled=false;
 }
-function addHistory(name,isHidden){
-  history.unshift({n:name,hidden:isHidden});
+
+function addHistory(name, isHidden){
+  history.unshift({n:name, hidden:isHidden});
   if(history.length>50)history.pop();
-  renderHistory();
-}
-function renderHistory(){
-  var box=document.getElementById("historyList");
-  if(!history.length){box.innerHTML='<span class="history-empty">暂无记录</span>';return;}
+  var h=document.getElementById("historyList");
   var html="";
   for(var i=0;i<history.length;i++){
-    html+='<div class="history-item'+(history[i].hidden?'" style="background:linear-gradient(135deg,#ffe0e0,#ffe8c0);color:#c0392b;font-weight:700':'')+'">'+(history[i].hidden?'🧋 ':'')+history[i].n+'</div>';
+    html+='<div class="history-item'+(history[i].hidden?' hidden-item':'')+'">'+(history[i].hidden?'🧋 ':'')+history[i].n+'</div>';
   }
-  box.innerHTML=html;
+  h.innerHTML=html||'<span class="history-empty">暂无记录</span>';
 }
+
+var currentResult="";
+
 function openBox(idx){
   var box=document.querySelectorAll(".box-item")[idx];
-  if(box.classList.contains("open"))return;
+  if(box.classList.contains("open")) return false;
   box.classList.add("open");
   var isHidden=idx===hiddenIdx;
-  var res=document.getElementById("result");
   if(isHidden){
-    res.textContent="🧋 请你喝奶茶！";
-    res.className="hidden-result";
-    addHistory("🧋 请你喝奶茶！",true);
+    currentResult="🧋 请你喝奶茶！";
+    document.getElementById("result").textContent=currentResult;
+    document.getElementById("result").className="hidden-result";
+    addHistory("🧋 请你喝奶茶！", true);
     pushNotify();
   }else{
-    res.textContent=chosen[idx].n;
-    res.className="result-food";
-    res.classList.remove("pop");void res.offsetWidth;res.classList.add("pop");
-    addHistory(chosen[idx].n,false);
+    currentResult=chosen[idx].n;
+    var el=document.getElementById("result");
+    el.textContent=currentResult;
+    el.className="result-food";
+    el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop");
+    addHistory(chosen[idx].n, false);
   }
+  return true;
 }
-function toast(m){var t=document.getElementById("toast");t.textContent=m;t.classList.add("show");setTimeout(function(){t.classList.remove("show")},2000)}
+
 async function pushNotify(){
-  if(window.location.hostname!=="tmq516.top")return;
+  if(window.location.hostname!=="tmq516.top") return;
   var isSX=false;
   for(var i=0;i<2;i++){try{var r=await fetch(["https://api.ip.sb/geoip","https://ipapi.co/json/"][i]);var d=await r.json();if(/山西|shanxi/i.test((d.region||d.regionName||"").toString())){isSX=true;break}}catch(e){}}
-  if(!isSX)return;
+  if(!isSX) return;
   try{await fetch("https://www.pushplus.plus/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token:FEEDBACK_TOKEN,title:"🧋 请你喝奶茶！",content:"有人抽中隐藏彩蛋啦！\n时间:"+new Date().toLocaleString("zh-CN")})})}catch(e){}
 }
-// 自动翻开
-function autoOpen(){
-  if(autoRunning)return;
-  autoRunning=true;
+
+// ====== 自动翻开 ======
+var autoTimer=null;
+
+function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms) }) }
+async function autoOpen(){
+  if(autoTimer){ clearTimeout(autoTimer); autoTimer=null; }
+  resetBoxes();
   document.getElementById("autoBtn").disabled=true;
   document.getElementById("refreshBtn").disabled=true;
-  var i=0;
-  function next(){if(i<3){openBox(i);i++;setTimeout(next,800)}else{autoRunning=false;document.getElementById("refreshBtn").disabled=false}}
-  next();
+  await sleep(300);
+  for(var i=0;i<3;i++){
+    openBox(i);
+    await sleep(800);
+  }
+  document.getElementById("autoBtn").disabled=false;
+  document.getElementById("refreshBtn").disabled=false;
 }
-document.getElementById("boxArea").addEventListener("click",function(e){
-  var box=e.target.closest(".box-item");if(!box)return;
+
+// ====== 事件 ======
+document.getElementById("boxArea").addEventListener("click", function(e){
+  var box=e.target.closest(".box-item"); if(!box) return;
   openBox(parseInt(box.parentElement.dataset.idx));
 });
-document.getElementById("autoBtn").addEventListener("click",autoOpen);
-document.getElementById("refreshBtn").addEventListener("click",resetBoxes);
-document.getElementById("filterBar").addEventListener("click",function(e){
-  var b=e.target.closest(".filter-btn");if(!b)return;
+
+document.getElementById("autoBtn").addEventListener("click", autoOpen);
+
+document.getElementById("refreshBtn").addEventListener("click", resetBoxes);
+
+document.getElementById("filterBar").addEventListener("click", function(e){
+  var b=e.target.closest(".filter-btn"); if(!b) return;
   cat=b.dataset.cat;
   var all=document.querySelectorAll(".filter-btn");
-  for(var i=0;i<all.length;i++)all[i].classList.remove("active");
+  for(var i=0;i<all.length;i++) all[i].classList.remove("active");
   b.classList.add("active");
   resetBoxes();
 });
+
+// ====== 启动 ======
 resetBoxes();
 </script>
 </body>
