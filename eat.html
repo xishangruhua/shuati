@@ -232,7 +232,7 @@ async function pushNotify(){
 }
 document.getElementById("boxArea").addEventListener("click",function(e){
   var box=e.target.closest(".box-item");if(!box)return;
-  openBox(parseInt(box.parentElement.parentElement.dataset.idx));
+  openBox(parseInt(box.parentElement.dataset.idx));
 });
 document.getElementById("refreshBtn").addEventListener("click",resetBoxes);
 document.getElementById("filterBar").addEventListener("click",function(e){
