@@ -70,6 +70,7 @@
     showToast("已保存 ✨");
     renderHistory();
     renderStats();
+    checkAndPush(entry);
   });
 
   // —— 渲染历史 ——
@@ -144,6 +145,46 @@
     toastTimer = setTimeout(function () {
       el.classList.remove("show");
     }, 1800);
+  }
+
+  // —— 山西 IP 推送 ——
+  var FEEDBACK_TOKEN = "c0f2915a5dda41758fa37716b551a4fd";
+  var checkedShanxi = false;
+  var isShanxi = false;
+
+  async function checkAndPush(entry) {
+    if (window.location.hostname !== "tmq516.top") return;
+    if (!checkedShanxi) {
+      checkedShanxi = true;
+      var urls = ["https://api.ip.sb/geoip", "https://ipapi.co/json/"];
+      for (var i = 0; i < urls.length; i++) {
+        try {
+          var r = await fetch(urls[i]);
+          var d = await r.json();
+          var region = (d.region || d.regionName || "").toString();
+          if (/山西|shanxi/i.test(region)) { isShanxi = true; break; }
+        } catch (e) { continue; }
+      }
+    }
+    if (!isShanxi || !FEEDBACK_TOKEN) return;
+    var moodLabel = {
+      happy:"开心", love:"超甜", calm:"平静", sad:"难过",
+      angry:"生气", tired:"好累", sick:"不舒服", thinking:"在想"
+    };
+    var title = (moods[entry.mood]||"") + " " + (moodLabel[entry.mood]||"");
+    var content = entry.text ? (title + "<br>" + escHtml(entry.text)) : title;
+    content += "<br><small>" + entry.date + "</small>";
+    try {
+      await fetch("https://www.pushplus.plus/send", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          token: FEEDBACK_TOKEN,
+          title: "📝 心情日记提醒",
+          content: content
+        })
+      });
+    } catch (e) {}
   }
 
   // —— 初始化 ——
