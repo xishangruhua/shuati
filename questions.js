@@ -1,13 +1,7 @@
-// 题库数据 — 7份资料
+// 题库数据 — 已清空
 window.QUESTION_BANK = {
-  "materials": [
-    {
-      "id": "xuanku",
-      "title": "学习通选择",
-      "type": "single",
-      "questions": [
-        {
-          "num": 1,
+  "materials": []
+};
           "chapter": "第一章  绪论",
           "stem": "动物生理学的任务在于阐明健康动物有机体（ ）。",
           "options": {

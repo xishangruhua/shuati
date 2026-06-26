@@ -8,104 +8,49 @@
 </head>
 <body>
   <div id="app">
-    <!-- 首页 -->
+    <!-- 心情记录首页 -->
     <section id="home" class="screen">
-      <h1 class="title">刷题</h1>
-      <p class="subtitle">祝谭美琪稳稳通过考试</p>
-      <h2 class="section-label">选择复习资料</h2>
-      <div id="material-list" class="material-list"></div>
-      <div id="wrongbook-entry" class="wrongbook-entry"></div>
-      <div id="hot-entry" class="hot-entry"></div>
-      <div id="lei-entry" class="lei-entry"></div>
-      <div id="game-entry" class="game-entry"></div>
-      <div id="dense-entry" class="dense-entry"></div>
-    </section>
+      <h1 class="title">心情日记</h1>
+      <p class="subtitle">记录每一天的小情绪 ♡</p>
 
-    <!-- 模式选择 -->
-    <section id="mode" class="screen hidden">
-      <button class="back" data-go="home">← 返回</button>
-      <div class="mode-center">
-        <h2 id="mode-title" class="mode-title"></h2>
-        <p class="mode-cheer" id="mode-cheer">加油呀！祝你稳稳过</p>
-        <div id="section-list-box" class="section-list" style="display:none"></div>
-        <div id="mode-buttons-box" class="mode-buttons">
-          <button class="mode-btn" data-mode="review">复习</button>
-          <button class="mode-btn" data-mode="test">测试</button>
-        </div>
-        <div id="multi-sliders" class="multi-sliders" style="display:none"></div>
-        <div id="test-setup" class="test-setup hidden">
-          <label class="slider-label">测试题数：<span id="count-value">20</span> 题 <span class="total-hint">/ 共 <span id="total-hint">0</span> 题</span></label>
-          <input type="range" id="count-slider" min="5" max="100" value="20" step="1">
-          <button id="start-test" class="primary-btn">开始测试</button>
+      <!-- 今日心情选择 -->
+      <div class="mood-card">
+        <div class="mood-card-title">今天心情如何呀？</div>
+        <div class="mood-options" id="mood-options">
+          <button class="mood-btn" data-mood="happy">😊<span>开心</span></button>
+          <button class="mood-btn" data-mood="love">😍<span>超甜</span></button>
+          <button class="mood-btn" data-mood="calm">😌<span>平静</span></button>
+          <button class="mood-btn" data-mood="sad">😢<span>难过</span></button>
+          <button class="mood-btn" data-mood="angry">😤<span>生气</span></button>
+          <button class="mood-btn" data-mood="tired">😴<span>好累</span></button>
+          <button class="mood-btn" data-mood="sick">🤒<span>不舒服</span></button>
+          <button class="mood-btn" data-mood="thinking">🤔<span>在想</span></button>
         </div>
       </div>
-    </section>
 
-    <!-- 答题页 -->
-    <section id="quiz" class="screen hidden">
-      <div class="quiz-top">
-        <button class="back" data-go="home">← 返回</button>
-        <span id="quiz-progress" class="quiz-progress"></span>
-        <span id="quiz-score" class="quiz-score"></span>
+      <!-- 写日记 -->
+      <div class="mood-card">
+        <div class="mood-card-title">想说点什么？</div>
+        <textarea id="mood-text" class="mood-textarea" placeholder="今天发生了什么有趣的事呢..."></textarea>
+        <button id="save-mood" class="mood-save-btn">✨ 保存今天的心情</button>
       </div>
 
-      <!-- 选择题/判断题/名词匹配 布局 -->
-      <div id="quiz-choice" class="quiz-body">
-        <div id="locate-hint" class="locate-hint"></div>
-        <div id="question-stem" class="question-stem"></div>
-        <div id="options" class="options"></div>
-        <div id="feedback" class="feedback"></div>
-        <div id="explanation" class="explanation"></div>
+      <!-- 历史记录 -->
+      <div class="mood-card">
+        <div class="mood-card-title">最近的心情 ✿</div>
+        <div id="mood-history" class="mood-history">
+          <div class="mood-empty">还没有记录哦，快来写下第一条心情吧～</div>
+        </div>
       </div>
 
-      <!-- 问答题布局 -->
-      <div id="quiz-essay" class="quiz-body essay-layout hidden">
-        <div id="essay-stem" class="essay-stem"></div>
-        <button id="show-answer-btn" class="primary-btn show-answer-btn">显示答案</button>
-        <div id="essay-answer" class="essay-answer hidden"></div>
-        <button id="remember-btn" class="primary-btn remember-btn hidden">我已记住 ✓</button>
-      </div>
-
-      <div class="quiz-slider-bar">
-        <span class="slider-num" id="slider-num-start">1</span>
-        <input type="range" id="question-slider" class="question-slider" min="1" max="1" value="1" step="1">
-        <span class="slider-num" id="slider-num-end">1</span>
-      </div>
-      <div class="quiz-nav">
-        <button id="prev-btn" class="nav-btn">← 上一道</button>
-        <button id="submit-btn" class="primary-btn hidden">提交</button>
-        <button id="next-btn" class="nav-btn">下一道 →</button>
-      </div>
-    </section>
-
-    <!-- 测试结果页 -->
-    <section id="result" class="screen hidden">
-      <h2 class="section-label">测试结束</h2>
-      <div id="result-score" class="result-score"></div>
-      <div id="result-detail" class="result-detail"></div>
-      <div class="mode-buttons">
-        <button class="primary-btn" data-go="home">回首页</button>
+      <!-- 统计卡片 -->
+      <div class="mood-card">
+        <div class="mood-card-title">心情统计 📊</div>
+        <div id="mood-stats" class="mood-stats"></div>
       </div>
     </section>
   </div>
 
-  <!-- 20连对彩蛋弹窗 -->
-  <div class="easter-overlay" id="easter-dialog">
-    <div class="easter-box">
-      <div class="easter-emoji">🎉</div>
-      <div class="easter-text">
-        哇居然这么厉害，不愧是你<br>
-        <span class="easter-green">真的很厉害</span><br>
-        这考试不随随便便拿下！<br>
-        让我们休息会吧
-      </div>
-      <div class="easter-kawaii">٩(●´৺`●)૭٩(●´৺`●)و</div>
-      <div class="easter-douyin">点击跳转抖音玩一会</div>
-      <button class="easter-btn" onclick="closeEaster()">不要，我要继续答题</button>
-    </div>
-  </div>
-
-  <canvas id="fireworks-canvas"></canvas>
 
   <script src="questions.js"></script>
   <script src="app.js"></script>
