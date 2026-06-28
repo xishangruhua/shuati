@@ -6,9 +6,14 @@
   var MASTER_TARGET=3;
 
   BANK.forEach(function(mat){
+    // 分离单选和多选
+    mat.singleQ=[];
+    mat.multiQ=[];
     mat.questions.forEach(function(q,i){
       q._uid=mat.id+"#"+i;
       q._matId=mat.id;
+      if(q.answer.length===1)mat.singleQ.push(q);
+      else mat.multiQ.push(q);
     });
   });
 
@@ -60,20 +65,13 @@
     BANK.forEach(function(mat){
       var pct=computeMatProgress(mat);
       var card=document.createElement("div");card.className="material-card";
-      var hasSingle=mat.questions.some(function(q){return q.answer.length===1});
-      var hasMulti=mat.questions.some(function(q){return q.answer.length>1});
-      var tn=hasSingle&&hasMulti?"单选+多选":hasMulti?"多选题":"单选题";
-      var meta=tn+" · 共 "+mat.questions.length+" 题"+
+      var sc=mat.singleQ.length,mc=mat.multiQ.length;
+      var tn=sc&&mc?"单选 + 多选":mc?"多选题":"单选题";
+      var meta=tn+" · 共 "+(sc+mc)+" 题"+
+        (sc&&mc?"（单选"+sc+" 多选"+mc+"）":"")+
         '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
         '<div class="progress-text">进度 '+pct+'%</div>';
       card.innerHTML='<div class="mc-name">'+mat.title+'</div><div class="mc-meta">'+meta+'</div>';
-      var rp=store.resume[mat.id];
-      if(rp!==undefined&&rp>=0&&rp<mat.questions.length){
-        var resumeTag=document.createElement("div");
-        resumeTag.className="resume-tag";
-        resumeTag.textContent="📌 上次看到第 "+(rp+1)+" / "+mat.questions.length+" 题";
-        card.appendChild(resumeTag);
-      }
       card.addEventListener("click",function(){openMaterial(mat)});
       list.appendChild(card);
     });
@@ -85,51 +83,87 @@
     currentMat=mat;
     $("mode-title").textContent=mat.title;
     $("mode-cheer").textContent="加油呀！祝你稳稳过";
-    $("test-setup").classList.add("hidden");
+    $("seq-setup").classList.add("hidden");
+    $("shuffle-setup").classList.add("hidden");
+
     var btns=$("mode-buttons-box");
-    btns.querySelector('[data-mode="test"]').classList.remove("hidden");
-    btns.querySelector('[data-mode="review"]').onclick=function(){startReview(mat)};
-    btns.querySelector('[data-mode="test"]').onclick=function(){
-      $("test-setup").classList.remove("hidden");
-    };
-    var slider=$("count-slider");
-    slider.max=mat.questions.length;
-    var def=Math.min(20,mat.questions.length);
-    slider.value=def;$("count-value").textContent=def;
-    $("total-hint").textContent=mat.questions.length;
-    $("start-test").onclick=function(){startTest(mat,parseInt($("count-slider").value,10))};
+    btns.querySelector('[data-mode="seq"]').onclick=function(){showSeq(mat)};
+    btns.querySelector('[data-mode="shuffle"]').onclick=function(){showShuffle(mat)};
     show("mode");
+  }
+
+  function showSeq(mat){
+    $("seq-setup").classList.remove("hidden");
+    $("shuffle-setup").classList.add("hidden");
+    var total=mat.questions.length;
+    $("seq-from").max=total;$("seq-to").max=total;
+    $("seq-from").value=1;$("seq-to").value=Math.min(50,total);
+    $("seq-from-val").textContent=1;$("seq-to-val").textContent=Math.min(50,total);
+    $("seq-total").textContent=total;
+    $("start-seq").onclick=function(){
+      var from=parseInt($("seq-from").value,10)-1;
+      var to=parseInt($("seq-to").value,10);
+      if(from>=to){alert("起始题号需小于结束题号");return}
+      // 单选在前多选在后，按序取
+      var list=mat.questions.slice(from,to);
+      startTest(mat,list);
+    };
+  }
+
+  function showShuffle(mat){
+    $("seq-setup").classList.add("hidden");
+    $("shuffle-setup").classList.remove("hidden");
+    var sc=mat.singleQ.length,mc=mat.multiQ.length;
+    var total=sc+mc;
+    var def=Math.min(20,total);
+    $("shuffle-count").max=total;
+    $("shuffle-count").value=def;
+    $("shuffle-val").textContent=def;
+    $("shuffle-total").textContent=total;
+    if(sc&&mc){
+      $("shuffle-ratio").textContent="（单选:"+sc+" 多选:"+mc+"，按比例分配）";
+    }else{
+      $("shuffle-ratio").textContent="";
+    }
+    $("start-shuffle").onclick=function(){
+      var count=parseInt($("shuffle-count").value,10);
+      // 按比例分配
+      var scount,mcount;
+      if(sc&&mc){
+        var ratio=sc/total;
+        scount=Math.round(count*ratio);
+        mcount=count-scount;
+      }else if(sc){
+        scount=count;mcount=0;
+      }else{
+        mcount=count;scount=0;
+      }
+      var sPick=shuffle(mat.singleQ.slice()).slice(0,Math.min(scount,sc));
+      var mPick=shuffle(mat.multiQ.slice()).slice(0,Math.min(mcount,mc));
+      // 单选在前多选在后
+      var list=sPick.concat(mPick);
+      startTest(mat,list);
+    };
   }
 
   var session=null;
 
-  function startReview(mat){
-    var qs=mat.questions.slice();
-    var rp=store.resume[mat.id];
-    var startIdx=(rp!==undefined&&rp>=0&&rp<qs.length)?rp:0;
-    session={mode:"review",mid:mat.id,list:qs,idx:startIdx};
-    show("quiz");renderQuestion();
-  }
-
-  function startTest(mat,count){
-    var picked=shuffle(mat.questions.slice()).slice(0,Math.min(count,mat.questions.length));
-    session={mode:"test",mid:mat.id,list:picked,idx:0,userAns:{},correctCount:0};
+  function startTest(mat,list){
+    session={mode:"test",mid:mat.id,list:list,idx:0,userAns:{},correctCount:0};
     show("quiz");renderQuestion();
   }
 
   function renderQuestion(){
     var q=session.list[session.idx];
-    if(session.mode==="review"&&session.mid){
-      store.resume[session.mid]=session.idx;
-      saveStore(store);
-    }
-    $("quiz-choice").classList.remove("hidden");$("quiz-essay").classList.add("hidden");
+    $("quiz-choice").classList.remove("hidden");
     var isTest=session.mode==="test";
-    $("locate-hint").textContent="";$("feedback").textContent="";$("feedback").className="feedback";
-    $("explanation").classList.add("hidden");
+    $("feedback").textContent="";$("feedback").className="feedback";
+    $("explanation").classList.add("hidden");$("explanation").textContent="";
     $("submit-btn").classList.add("hidden");
     $("quiz-progress").textContent=(session.idx+1)+" / "+session.list.length;
-    $("quiz-score").textContent=isTest?("已答对 "+session.correctCount):"复习模式";
+    $("quiz-score").textContent=isTest?("已答对 "+session.correctCount):"";
+    // 题型标识
+    $("locate-hint").textContent=q.answer.length>1?"【多选题】":"【单选题】";
     $("question-stem").textContent=q.stem;
     var box=$("options");box.innerHTML="";
     var entries=optionEntries(q);
@@ -140,8 +174,9 @@
       el.className="option";
       el.innerHTML='<span class="opt-key">'+e.key+".</span>"+e.text;
       el.dataset.key=e.key;
-      if(!isTest){if(correctSet.indexOf(e.key)>=0)el.classList.add("correct-highlight");el.classList.add("disabled")}
-      else{el.addEventListener("click",function(){onChoose(q,e.key,el,isMulti)})}
+      if(isTest){
+        el.addEventListener("click",function(){onChoose(q,e.key,el,isMulti)});
+      }
       box.appendChild(el);
     });
     if(isTest&&isMulti&&!session.userAns[q._uid]){$("submit-btn").classList.remove("hidden");session._multiSel=[]}
@@ -168,11 +203,13 @@
     var ok=arrEq(chosen.slice().sort(),correct);
     session.userAns[q._uid]={chosen:chosen,ok:ok};
     if(ok)session.correctCount++;
-    var st=matState(session.mid);
-    var cur=st.mastery[q._uid]||0;
-    st.mastery[q._uid]=ok?cur+1:0;
-    if(ok)delete store.wrong[q._uid];else store.wrong[q._uid]=true;
-    saveStore(store);
+    if(session.mid){
+      var st=matState(session.mid);
+      var cur=st.mastery[q._uid]||0;
+      st.mastery[q._uid]=ok?cur+1:0;
+      if(ok)delete store.wrong[q._uid];else store.wrong[q._uid]=true;
+      saveStore(store);
+    }
     revealResult(q,session.userAns[q._uid]);
     if(ok){
       $("submit-btn").classList.add("hidden");
@@ -195,9 +232,9 @@
     var fb=$("feedback");
     if(ans.ok){fb.textContent="✓ 回答正确";fb.className="feedback right"}
     else{fb.textContent="✗ 回答错误，正确答案："+correct.join("");fb.className="feedback wrong";
-      var ex=$("explanation");
-      ex.textContent=q.explanation&&q.explanation.trim()?q.explanation:"（暂无解析）";
-      ex.classList.remove("hidden")}
+      if(q.explanation&&q.explanation.trim()){
+        $("explanation").textContent=q.explanation;$("explanation").classList.remove("hidden");
+      }}
   }
 
   function finishTest(){
@@ -218,28 +255,18 @@
   }
 
   $("next-btn").addEventListener("click",function(){
-    if(session.idx<session.list.length-1){session.idx++;renderQuestion()}
-    else if(session.mode==="test")finishTest();
-    else show("home");
+    if(session&&session.idx<session.list.length-1){session.idx++;renderQuestion()}
+    else if(session&&session.mode==="test")finishTest();
   });
   $("prev-btn").addEventListener("click",function(){
-    if(session.idx>0){session.idx--;renderQuestion()}
+    if(session&&session.idx>0){session.idx--;renderQuestion()}
   });
-  $("count-slider").addEventListener("input",function(){$("count-value").textContent=this.value});
-  Array.prototype.forEach.call(document.querySelectorAll("[data-go]"),function(btn){
-    btn.addEventListener("click",function(){if(btn.dataset.go==="home"){renderHome();show("home")}else show(btn.dataset.go)});
-  });
+  $("seq-from").addEventListener("input",function(){$("seq-from-val").textContent=this.value});
+  $("seq-to").addEventListener("input",function(){$("seq-to-val").textContent=this.value});
+  $("shuffle-count").addEventListener("input",function(){$("shuffle-val").textContent=this.value});
 
-  // 全局返回
+  // 返回
   window.goHome=function(){renderHome();show("home")};
-
-  // 回首页按钮（结果页）
-  Array.prototype.forEach.call(document.querySelectorAll("[data-go]"),function(btn){
-    btn.addEventListener("click",function(){
-      if(btn.dataset.go==="home"){renderHome();show("home")}
-      else show(btn.dataset.go);
-    });
-  });
 
   if(!BANK.length){$("material-list").innerHTML="<p>未找到题库数据</p>"}
   else renderHome();

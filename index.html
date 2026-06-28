@@ -24,13 +24,28 @@
         <h2 id="mode-title" class="mode-title"></h2>
         <p class="mode-cheer" id="mode-cheer">加油呀！祝你稳稳过</p>
         <div id="mode-buttons-box" class="mode-buttons">
-          <button class="mode-btn" data-mode="review">复习</button>
-          <button class="mode-btn" data-mode="test">测试</button>
+          <button class="mode-btn" data-mode="seq">📖 顺序</button>
+          <button class="mode-btn" data-mode="shuffle">🔀 打乱</button>
         </div>
-        <div id="test-setup" class="test-setup hidden">
-          <label class="slider-label">测试题数：<span id="count-value">20</span> 题 <span class="total-hint">/ 共 <span id="total-hint">0</span> 题</span></label>
-          <input type="range" id="count-slider" min="5" max="100" value="20" step="1">
-          <button id="start-test" class="primary-btn">开始测试</button>
+        <!-- 顺序设置 -->
+        <div id="seq-setup" class="test-setup hidden">
+          <div class="slider-double">
+            <label class="slider-label">从第 <span id="seq-from-val">1</span> 题</label>
+            <input type="range" id="seq-from" min="1" max="100" value="1" step="1">
+          </div>
+          <div class="slider-double">
+            <label class="slider-label">到第 <span id="seq-to-val">50</span> 题</label>
+            <input type="range" id="seq-to" min="1" max="100" value="50" step="1">
+          </div>
+          <div class="total-hint">共 <span id="seq-total">0</span> 题</div>
+          <button id="start-seq" class="primary-btn">开始做题</button>
+        </div>
+        <!-- 打乱设置 -->
+        <div id="shuffle-setup" class="test-setup hidden">
+          <label class="slider-label">随机题数：<span id="shuffle-val">20</span> 题 <span class="total-hint">/ 共 <span id="shuffle-total">0</span> 题</span></label>
+          <input type="range" id="shuffle-count" min="5" max="100" value="20" step="1">
+          <div class="total-hint" id="shuffle-ratio"></div>
+          <button id="start-shuffle" class="primary-btn">开始做题</button>
         </div>
       </div>
     </section>
@@ -52,14 +67,6 @@
         <div id="explanation" class="explanation"></div>
       </div>
 
-      <!-- 问答题布局 -->
-      <div id="quiz-essay" class="quiz-body essay-layout hidden">
-        <div id="essay-stem" class="essay-stem"></div>
-        <button id="show-answer-btn" class="primary-btn show-answer-btn">显示答案</button>
-        <div id="essay-answer" class="essay-answer hidden"></div>
-        <button id="remember-btn" class="primary-btn remember-btn hidden">我已记住 ✓</button>
-      </div>
-
       <div class="quiz-nav">
         <button id="prev-btn" class="nav-btn">← 上一道</button>
         <button id="submit-btn" class="primary-btn hidden">提交</button>
@@ -73,7 +80,7 @@
       <div id="result-score" class="result-score"></div>
       <div id="result-detail" class="result-detail"></div>
       <div class="mode-buttons">
-        <button class="primary-btn" data-go="home">回首页</button>
+        <button class="primary-btn" onclick="window.goHome()">回首页</button>
       </div>
     </section>
   </div>
