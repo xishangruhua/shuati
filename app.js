@@ -60,8 +60,9 @@
     BANK.forEach(function(mat){
       var pct=computeMatProgress(mat);
       var card=document.createElement("div");card.className="material-card";
-      var isMulti=mat.questions[0]&&mat.questions[0].answer&&mat.questions[0].answer.length>1;
-      var tn=isMulti?"多选题":"单选题";
+      var hasSingle=mat.questions.some(function(q){return q.answer.length===1});
+      var hasMulti=mat.questions.some(function(q){return q.answer.length>1});
+      var tn=hasSingle&&hasMulti?"单选+多选":hasMulti?"多选题":"单选题";
       var meta=tn+" · 共 "+mat.questions.length+" 题"+
         '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
         '<div class="progress-text">进度 '+pct+'%</div>';
@@ -227,6 +228,17 @@
   $("count-slider").addEventListener("input",function(){$("count-value").textContent=this.value});
   Array.prototype.forEach.call(document.querySelectorAll("[data-go]"),function(btn){
     btn.addEventListener("click",function(){if(btn.dataset.go==="home"){renderHome();show("home")}else show(btn.dataset.go)});
+  });
+
+  // 全局返回
+  window.goHome=function(){renderHome();show("home")};
+
+  // 回首页按钮（结果页）
+  Array.prototype.forEach.call(document.querySelectorAll("[data-go]"),function(btn){
+    btn.addEventListener("click",function(){
+      if(btn.dataset.go==="home"){renderHome();show("home")}
+      else show(btn.dataset.go);
+    });
   });
 
   if(!BANK.length){$("material-list").innerHTML="<p>未找到题库数据</p>"}

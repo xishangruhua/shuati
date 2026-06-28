@@ -19,7 +19,7 @@
 
     <!-- 模式选择 -->
     <section id="mode" class="screen hidden">
-      <button class="back" data-go="home">← 返回</button>
+      <button class="back" onclick="window.goHome()">← 返回</button>
       <div class="mode-center">
         <h2 id="mode-title" class="mode-title"></h2>
         <p class="mode-cheer" id="mode-cheer">加油呀！祝你稳稳过</p>
@@ -38,7 +38,7 @@
     <!-- 答题页 -->
     <section id="quiz" class="screen hidden">
       <div class="quiz-top">
-        <button class="back" data-go="home">← 返回</button>
+        <button class="back" onclick="window.goHome()">← 返回</button>
         <span id="quiz-progress" class="quiz-progress"></span>
         <span id="quiz-score" class="quiz-score"></span>
       </div>
