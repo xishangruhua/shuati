@@ -265,7 +265,7 @@
   $("seq-to").addEventListener("input",function(){$("seq-to-val").textContent=this.value});
   $("shuffle-count").addEventListener("input",function(){$("shuffle-val").textContent=this.value});
 
-  // 返回
+  // 全局返回函数
   window.goHome=function(){renderHome();show("home")};
 
   if(!BANK.length){$("material-list").innerHTML="<p>未找到题库数据</p>"}
