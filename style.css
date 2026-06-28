@@ -19,6 +19,10 @@ html,body{margin:0;padding:0;background:linear-gradient(160deg,var(--bg-grad-1),
 .material-list{display:flex;flex-direction:column;gap:14px}
 .material-card{border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;cursor:pointer;background:var(--surface);box-shadow:var(--shadow-sm);transition:transform .18s,box-shadow .18s}
 .material-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+
+.wrongbook-entry{margin-top:24px}
+.wrongbook-card{border:1px solid var(--line);border-radius:var(--radius);padding:14px 20px;cursor:pointer;text-align:center;color:#3a463f;background:var(--surface-soft);box-shadow:var(--shadow-sm);transition:transform .18s,box-shadow .18s;font-weight:500}
+.wrongbook-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
 .material-card .mc-name{font-size:1.12rem;font-weight:600;color:#243029}
 .material-card .mc-meta{color:var(--muted);font-size:.85rem;margin-top:4px}
 .material-card .progress-bar{height:7px;background:#e8eee9;border-radius:4px;margin-top:12px;overflow:hidden}

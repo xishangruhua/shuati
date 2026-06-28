@@ -75,6 +75,13 @@
       card.addEventListener("click",function(){openMaterial(mat)});
       list.appendChild(card);
     });
+    // 错题集
+    var wc=Object.keys(store.wrong).length;
+    $("wrongbook-entry").innerHTML='<div class="wrongbook-card">📌 错题集（'+wc+' 题）</div>';
+    $("wrongbook-entry").querySelector(".wrongbook-card").addEventListener("click",function(){
+      if(!wc){alert("还没有错题～");return}
+      startWrongbook();
+    });
     $("eat-entry-info").innerHTML='<a href="eat.html" class="eat-entry-card">🍽 吃啥 — 今天吃什么</a>';
   }
 
@@ -153,6 +160,22 @@
     show("quiz");renderQuestion();
   }
 
+  function startWrongbook(){
+    var qs=[];
+    BANK.forEach(function(mat){
+      mat.questions.forEach(function(q){
+        if(store.wrong[q._uid]){q._matTitle=mat.title;qs.push(q)}
+      });
+    });
+    if(!qs.length){alert("还没有错题～");return}
+    // 单选在前多选在后
+    var sq=qs.filter(function(q){return q.answer.length===1});
+    var mq=qs.filter(function(q){return q.answer.length>1});
+    var list=shuffle(sq).concat(shuffle(mq));
+    session={mode:"test",mid:null,list:list,idx:0,userAns:{},correctCount:0,isWrongbook:true};
+    show("quiz");renderQuestion();
+  }
+
   function renderQuestion(){
     var q=session.list[session.idx];
     $("quiz-choice").classList.remove("hidden");
@@ -160,7 +183,7 @@
     $("feedback").textContent="";$("feedback").className="feedback";
     $("explanation").classList.add("hidden");$("explanation").textContent="";
     $("submit-btn").classList.add("hidden");
-    $("quiz-progress").textContent=(session.idx+1)+" / "+session.list.length;
+    $("quiz-progress").textContent=(session.isWrongbook?"错题集 ":"")+(session.idx+1)+" / "+session.list.length;
     $("quiz-score").textContent=isTest?("已答对 "+session.correctCount):"";
     // 题型标识
     $("locate-hint").textContent=q.answer.length>1?"【多选题】":"【单选题】";
@@ -203,7 +226,16 @@
     var ok=arrEq(chosen.slice().sort(),correct);
     session.userAns[q._uid]={chosen:chosen,ok:ok};
     if(ok)session.correctCount++;
-    if(session.mid){
+    if(session.isWrongbook){
+      var storeKey=q._matId||session.mid;
+      if(storeKey){
+        var st=matState(storeKey);
+        var cur=st.mastery[q._uid]||0;
+        st.mastery[q._uid]=ok?cur+1:0;
+      }
+      if(ok)delete store.wrong[q._uid];
+      saveStore(store);
+    }else if(session.mid){
       var st=matState(session.mid);
       var cur=st.mastery[q._uid]||0;
       st.mastery[q._uid]=ok?cur+1:0;
@@ -241,7 +273,8 @@
     var total=session.list.length;if(!total)return;
     var score=Math.round(session.correctCount/total*100);
     $("result-score").textContent=score+" 分";
-    $("result-detail").textContent="共 "+total+" 题，答对 "+session.correctCount+" 题";
+    $("result-detail").textContent="共 "+total+" 题，答对 "+session.correctCount+" 题"
+      +(session.isWrongbook?"　|　剩余错题 "+(Object.keys(store.wrong).length)+" 题":"");
     if(session.mid){
       var st=matState(session.mid);
       var thisScore=session.correctCount/total;
