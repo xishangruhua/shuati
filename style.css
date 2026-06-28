@@ -31,8 +31,9 @@ html,body{margin:0;padding:0;background:linear-gradient(160deg,var(--bg-grad-1),
 .eat-entry-card{border:1px solid rgba(47,158,111,.2);border-radius:var(--radius);padding:16px 20px;cursor:pointer;text-align:center;font-size:1rem;font-weight:600;color:#2f7a4a;background:linear-gradient(135deg,#e8f5ed,#dcefe3);box-shadow:var(--shadow-sm);transition:transform .18s,box-shadow .18s;display:block;text-decoration:none}
 .eat-entry-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
 
-.back{background:none;border:none;color:var(--muted);font-size:.95rem;cursor:pointer;padding:8px 12px;margin-bottom:12px;position:relative;z-index:20;display:inline-block;-webkit-appearance:none}
-.back:hover{color:var(--accent)}
+.back{background:var(--surface);border:1px solid var(--line);color:var(--muted);font-size:.95rem;cursor:pointer;padding:10px 18px;margin-bottom:14px;position:relative;z-index:50;display:inline-block;-webkit-appearance:none;border-radius:10px;font-family:inherit;box-shadow:var(--shadow-sm);pointer-events:auto;touch-action:manipulation}
+.back:hover{color:var(--accent);border-color:rgba(47,158,111,.3)}
+.back:active{background:var(--accent-soft)}
 .primary-btn{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px 30px;font-size:1rem;cursor:pointer;font-weight:600;box-shadow:0 4px 14px rgba(47,158,111,.3);transition:transform .12s}
 .primary-btn:hover{transform:translateY(-1px)}
 .primary-btn:active{opacity:.9}
@@ -51,8 +52,8 @@ html,body{margin:0;padding:0;background:linear-gradient(160deg,var(--bg-grad-1),
 .total-hint{color:var(--muted);font-size:.82rem;margin-bottom:16px}
 .test-setup .primary-btn{margin-top:8px}
 
-.quiz-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.quiz-top .back{margin-bottom:0}
+.quiz-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
+.quiz-top .back{margin-bottom:0;flex-shrink:0}
 .quiz-progress,.quiz-score{font-size:.85rem;color:var(--muted)}
 .quiz-body{text-align:center;padding:34px 22px;min-height:50vh;display:flex;flex-direction:column;justify-content:center;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow-md)}
 .locate-hint{font-size:.78rem;color:#b3bdb6;margin-bottom:12px;min-height:1em}
