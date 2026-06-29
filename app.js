@@ -24,6 +24,7 @@
   store.materials=store.materials||{};
   store.wrong=store.wrong||{};
   store.resume=store.resume||{};
+  store.seqPos=store.seqPos||{};
 
   function matState(k){
     if(!store.materials[k])store.materials[k]={mastery:{},scoreAvg:null,tests:0};
@@ -77,81 +78,109 @@
     });
     // 错题集
     var wc=Object.keys(store.wrong).length;
-    $("wrongbook-entry").innerHTML='<div class="wrongbook-card">📌 错题集（'+wc+' 题）</div>';
+    $("wrongbook-entry").innerHTML='<div class="wrongbook-card">错题集（'+wc+' 题）</div>';
     $("wrongbook-entry").querySelector(".wrongbook-card").addEventListener("click",function(){
       if(!wc){alert("还没有错题～");return}
       startWrongbook();
     });
-    $("eat-entry").innerHTML='<a href="eat.html" class="eat-entry-card">🍽 吃啥 — 今天吃什么</a>';
+    $("eat-entry").innerHTML='<a href="eat.html" class="eat-entry-card">吃啥 — 今天吃什么</a>';
   }
 
-  var currentMat=null;
+  var currentMat=null, currentPool=null, currentType=null;
   function openMaterial(mat){
     currentMat=mat;
     $("mode-title").textContent=mat.title;
     $("mode-cheer").textContent="加油呀！祝你稳稳过";
-    $("seq-setup").classList.add("hidden");
-    $("shuffle-setup").classList.add("hidden");
-
+    // 题型按钮
+    var sc=mat.singleQ.length, mc=mat.multiQ.length;
     var btns=$("mode-buttons-box");
-    btns.querySelector('[data-mode="seq"]').onclick=function(){showSeq(mat)};
-    btns.querySelector('[data-mode="shuffle"]').onclick=function(){showShuffle(mat)};
+    btns.querySelector('[data-type="single"] .type-num').textContent=sc+" 题";
+    btns.querySelector('[data-type="multi"] .type-num').textContent=mc+" 题";
+    // 重置
+    btns.querySelectorAll('.type-btn').forEach(function(b){b.classList.remove("active")});
+    if(!sc)btns.querySelector('[data-type="single"]').style.opacity='.35';
+    else btns.querySelector('[data-type="single"]').style.opacity='1';
+    if(!mc)btns.querySelector('[data-type="multi"]').style.opacity='.35';
+    else btns.querySelector('[data-type="multi"]').style.opacity='1';
+    $("type-setup").classList.add("hidden");
     show("mode");
   }
 
-  function showSeq(mat){
-    $("seq-setup").classList.remove("hidden");
-    $("shuffle-setup").classList.add("hidden");
-    var total=mat.questions.length;
-    $("seq-from").max=total;$("seq-to").max=total;
-    $("seq-from").value=1;$("seq-to").value=Math.min(50,total);
-    $("seq-from-val").textContent=1;$("seq-to-val").textContent=Math.min(50,total);
-    $("seq-total").textContent=total;
-    $("start-seq").onclick=function(){
-      var from=parseInt($("seq-from").value,10)-1;
-      var to=parseInt($("seq-to").value,10);
-      if(from>=to){alert("起始题号需小于结束题号");return}
-      // 单选在前多选在后，按序取
-      var list=mat.questions.slice(from,to);
-      startTest(mat,list);
-    };
-  }
+  // 题型按钮点击
+  $("mode-buttons-box").addEventListener("click", function(e){
+    var btn=e.target.closest(".type-btn"); if(!btn)return;
+    var type=btn.dataset.type;
+    if(!currentMat)return;
+    var pool=type==="single"?currentMat.singleQ:currentMat.multiQ;
+    if(!pool.length){alert(type==="single"?"该资料没有单选题":"该资料没有多选题");return}
+    // 高亮
+    this.querySelectorAll('.type-btn').forEach(function(b){b.classList.remove("active")});
+    btn.classList.add("active");
+    currentPool=pool; currentType=type;
+    showTypeSetup(pool);
+  });
 
-  function showShuffle(mat){
-    $("seq-setup").classList.add("hidden");
-    $("shuffle-setup").classList.remove("hidden");
-    var sc=mat.singleQ.length,mc=mat.multiQ.length;
-    var total=sc+mc;
+  function showTypeSetup(pool){
+    $("type-setup").classList.remove("hidden");
+    var total=pool.length;
+    // 记忆位置
+    var posKey=currentMat.id+"_"+currentType;
+    var savedFrom=(store.seqPos[posKey]||0)+1;
+    var fromVal=savedFrom>total?1:savedFrom;
+    var toVal=Math.min(fromVal+19,total);
+    $("seq-from").max=total;$("seq-to").max=total;
+    $("seq-from").value=fromVal;$("seq-to").value=toVal;
+    $("seq-from-val").textContent=fromVal;$("seq-to-val").textContent=toVal;
+    $("seq-total").textContent=total;
+    // 打乱面板
     var def=Math.min(20,total);
     $("shuffle-count").max=total;
     $("shuffle-count").value=def;
     $("shuffle-val").textContent=def;
     $("shuffle-total").textContent=total;
-    if(sc&&mc){
-      $("shuffle-ratio").textContent="（单选:"+sc+" 多选:"+mc+"，按比例分配）";
-    }else{
-      $("shuffle-ratio").textContent="";
-    }
-    $("start-shuffle").onclick=function(){
-      var count=parseInt($("shuffle-count").value,10);
-      // 按比例分配
-      var scount,mcount;
-      if(sc&&mc){
-        var ratio=sc/total;
-        scount=Math.round(count*ratio);
-        mcount=count-scount;
-      }else if(sc){
-        scount=count;mcount=0;
-      }else{
-        mcount=count;scount=0;
-      }
-      var sPick=shuffle(mat.singleQ.slice()).slice(0,Math.min(scount,sc));
-      var mPick=shuffle(mat.multiQ.slice()).slice(0,Math.min(mcount,mc));
-      // 单选在前多选在后
-      var list=sPick.concat(mPick);
-      startTest(mat,list);
-    };
+    $("shuffle-ratio").textContent="";
+    // 重置子模式为顺序
+    $("seq-panel").classList.remove("hidden");
+    $("shuffle-panel").classList.add("hidden");
+    document.querySelectorAll(".sub-mode-btn").forEach(function(b){b.classList.toggle("active",b.dataset.sub==="seq")});
   }
+
+  // 子模式切换（顺序/打乱）
+  document.querySelector(".sub-mode-row").addEventListener("click", function(e){
+    var btn=e.target.closest(".sub-mode-btn"); if(!btn)return;
+    this.querySelectorAll('.sub-mode-btn').forEach(function(b){b.classList.remove("active")});
+    btn.classList.add("active");
+    var sub=btn.dataset.sub;
+    $("seq-panel").classList.toggle("hidden", sub!=="seq");
+    $("shuffle-panel").classList.toggle("hidden", sub!=="shuffle");
+  });
+
+  // 开始做题
+  $("start-type").addEventListener("click", function(){
+    if(!currentPool||!currentMat)return;
+    var sub=document.querySelector(".sub-mode-btn.active").dataset.sub;
+    var list;
+    if(sub==="seq"){
+      var from=parseInt($("seq-from").value,10)-1;
+      var to=parseInt($("seq-to").value,10);
+      if(from>=to){alert("起始题号需小于结束题号");return}
+      list=currentPool.slice(from,to);
+    }else{
+      var count=parseInt($("shuffle-count").value,10);
+      list=shuffle(currentPool.slice()).slice(0,Math.min(count,currentPool.length));
+    }
+    startTest(currentMat,list);
+  });
+
+  // slider 事件
+  $("seq-from").addEventListener("input",function(){
+    var v=parseInt(this.value,10);
+    $("seq-from-val").textContent=v;
+    var to=Math.min(v+19,parseInt($("seq-to").max,10));
+    $("seq-to").value=to;$("seq-to-val").textContent=to;
+  });
+  $("seq-to").addEventListener("input",function(){$("seq-to-val").textContent=this.value});
+  $("shuffle-count").addEventListener("input",function(){$("shuffle-val").textContent=this.value});
 
   var session=null;
 
@@ -282,10 +311,27 @@
       st.tests=(st.tests||0)+1;
       var p=computeMatProgress(currentMat||BANK[0]);
       $("result-detail").textContent+="　|　近期 "+Math.round(st.scoreAvg*100)+"%　|　进度 "+p+"%";
+      // 记忆顺序位置：记录做完的最后一题在 currentPool 中的下标
+      if(currentPool&&currentType){
+        var lastQ=session.list[session.list.length-1];
+        var poolIdx=currentPool.indexOf(lastQ);
+        if(poolIdx>=0) store.seqPos[currentMat.id+"_"+currentType]=poolIdx;
+      }
       saveStore(store);
     }
+    // 重做按钮：<100 题且非错题集显示
+    $("redo-btn").classList.toggle("hidden", total>=100||session.isWrongbook);
+    // 返回按钮：普通测试回模式页，错题集回首页
+    $("result-back").onclick=function(e){e.preventDefault();session.isWrongbook?show("home"):show("mode")};
     show("result");
   }
+
+  // 重做
+  $("redo-btn").addEventListener("click", function(){
+    if(!session||!session.list.length)return;
+    session.idx=0;session.userAns={};session.correctCount=0;
+    show("quiz");renderQuestion();
+  });
 
   $("next-btn").addEventListener("click",function(){
     if(session&&session.idx<session.list.length-1){session.idx++;renderQuestion()}
@@ -294,9 +340,6 @@
   $("prev-btn").addEventListener("click",function(){
     if(session&&session.idx>0){session.idx--;renderQuestion()}
   });
-  $("seq-from").addEventListener("input",function(){$("seq-from-val").textContent=this.value});
-  $("seq-to").addEventListener("input",function(){$("seq-to-val").textContent=this.value});
-  $("shuffle-count").addEventListener("input",function(){$("shuffle-val").textContent=this.value});
 
   // 全局返回函数
   window.goHome=function(){renderHome();show("home")};

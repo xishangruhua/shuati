@@ -25,28 +25,34 @@
         <h2 id="mode-title" class="mode-title"></h2>
         <p class="mode-cheer" id="mode-cheer">加油呀！祝你稳稳过</p>
         <div id="mode-buttons-box" class="mode-buttons">
-          <button class="mode-btn" data-mode="seq">📖 顺序</button>
-          <button class="mode-btn" data-mode="shuffle">🔀 打乱</button>
+          <button class="mode-btn type-btn" data-type="single">单选题 <span class="type-num"></span></button>
+          <button class="mode-btn type-btn" data-type="multi">多选题 <span class="type-num"></span></button>
         </div>
-        <!-- 顺序设置 -->
-        <div id="seq-setup" class="test-setup hidden">
-          <div class="slider-double">
-            <label class="slider-label">从第 <span id="seq-from-val">1</span> 题</label>
-            <input type="range" id="seq-from" min="1" max="100" value="1" step="1">
+        <!-- 题型设置区 -->
+        <div id="type-setup" class="type-setup hidden">
+          <div class="sub-mode-row">
+            <button class="sub-mode-btn active" data-sub="seq">顺序</button>
+            <button class="sub-mode-btn" data-sub="shuffle">打乱</button>
           </div>
-          <div class="slider-double">
-            <label class="slider-label">到第 <span id="seq-to-val">50</span> 题</label>
-            <input type="range" id="seq-to" min="1" max="100" value="50" step="1">
+          <!-- 顺序面板 -->
+          <div id="seq-panel" class="sub-panel">
+            <div class="slider-double">
+              <label class="slider-label">从第 <span id="seq-from-val">1</span> 题</label>
+              <input type="range" id="seq-from" min="1" max="100" value="1" step="1">
+            </div>
+            <div class="slider-double">
+              <label class="slider-label">到第 <span id="seq-to-val">50</span> 题</label>
+              <input type="range" id="seq-to" min="1" max="100" value="50" step="1">
+            </div>
+            <div class="total-hint">共 <span id="seq-total">0</span> 题</div>
           </div>
-          <div class="total-hint">共 <span id="seq-total">0</span> 题</div>
-          <button id="start-seq" class="primary-btn">开始做题</button>
-        </div>
-        <!-- 打乱设置 -->
-        <div id="shuffle-setup" class="test-setup hidden">
-          <label class="slider-label">随机题数：<span id="shuffle-val">20</span> 题 <span class="total-hint">/ 共 <span id="shuffle-total">0</span> 题</span></label>
-          <input type="range" id="shuffle-count" min="5" max="100" value="20" step="1">
-          <div class="total-hint" id="shuffle-ratio"></div>
-          <button id="start-shuffle" class="primary-btn">开始做题</button>
+          <!-- 打乱面板 -->
+          <div id="shuffle-panel" class="sub-panel hidden">
+            <label class="slider-label">随机题数：<span id="shuffle-val">20</span> 题 <span class="total-hint">/ 共 <span id="shuffle-total">0</span> 题</span></label>
+            <input type="range" id="shuffle-count" min="5" max="100" value="20" step="1">
+            <div class="total-hint" id="shuffle-ratio"></div>
+          </div>
+          <button id="start-type" class="primary-btn">开始做题</button>
         </div>
       </div>
     </section>
@@ -81,8 +87,9 @@
       <div id="result-score" class="result-score"></div>
       <div id="result-detail" class="result-detail"></div>
       <div class="mode-buttons">
-        <a class="primary-btn" href="index.html">回首页</a>
+        <a class="primary-btn" id="result-back" href="#">返回</a>
       </div>
+      <button id="redo-btn" class="redo-btn hidden">重做</button>
     </section>
   </div>
 
