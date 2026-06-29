@@ -321,8 +321,12 @@
     }
     // 重做按钮：<100 题且非错题集显示
     $("redo-btn").classList.toggle("hidden", total>=100||session.isWrongbook);
-    // 返回按钮：普通测试回模式页，错题集回首页
-    $("result-back").onclick=function(e){e.preventDefault();session.isWrongbook?show("home"):show("mode")};
+    // 返回按钮：普通测试回模式页并刷新位置，错题集回首页
+    $("result-back").onclick=function(e){e.preventDefault();
+      if(session.isWrongbook){show("home");return}
+      if(currentPool){showTypeSetup(currentPool)}
+      show("mode");
+    };
     show("result");
   }
 
