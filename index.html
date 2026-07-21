@@ -4,96 +4,46 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>刷题</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{
+      width:100%;height:100%;
+      background:linear-gradient(160deg,#dcefe2,#e6f1e9);
+      background-attachment:fixed;
+      font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+      -webkit-font-smoothing:antialiased;
+      color:#213027;
+    }
+    .farewell{
+      width:100vw;height:100vh;
+      display:flex;flex-direction:column;
+      justify-content:center;align-items:center;
+      text-align:center;
+      padding:0 24px;
+    }
+    .farewell .l1{
+      font-size:2.8rem;
+      font-weight:600;
+      line-height:1.8;
+      letter-spacing:.06em;
+    }
+    .farewell .l2{
+      font-size:3.8rem;
+      font-weight:700;
+      line-height:1.6;
+      letter-spacing:.08em;
+      color:#1a6b42;
+    }
+    @media(max-width:600px){
+      .farewell .l1{font-size:2rem}
+      .farewell .l2{font-size:2.6rem}
+    }
+  </style>
 </head>
 <body>
-  <div id="app">
-    <!-- 首页 -->
-    <section id="home" class="screen">
-      <h1 class="title">刷题</h1>
-      <p class="subtitle">近代史题库</p>
-      <h2 class="section-label">选择复习资料</h2>
-      <div id="material-list" class="material-list"></div>
-      <div id="wrongbook-entry" class="wrongbook-entry"></div>
-      <div id="eat-entry" class="eat-entry-info"></div>
-    </section>
-
-    <!-- 模式选择 -->
-    <section id="mode" class="screen hidden">
-      <a class="back" href="index.html">← 返回</a>
-      <div class="mode-center">
-        <h2 id="mode-title" class="mode-title"></h2>
-        <p class="mode-cheer" id="mode-cheer">加油呀！祝你稳稳过</p>
-        <div id="mode-buttons-box" class="mode-buttons">
-          <button class="mode-btn type-btn" data-type="single">单选题 <span class="type-num"></span></button>
-          <button class="mode-btn type-btn" data-type="multi">多选题 <span class="type-num"></span></button>
-        </div>
-        <!-- 题型设置区 -->
-        <div id="type-setup" class="type-setup hidden">
-          <div class="sub-mode-row">
-            <button class="sub-mode-btn active" data-sub="seq">顺序</button>
-            <button class="sub-mode-btn" data-sub="shuffle">打乱</button>
-          </div>
-          <!-- 顺序面板 -->
-          <div id="seq-panel" class="sub-panel">
-            <div class="slider-double">
-              <label class="slider-label">从第 <span id="seq-from-val">1</span> 题</label>
-              <input type="range" id="seq-from" min="1" max="100" value="1" step="1">
-            </div>
-            <div class="slider-double">
-              <label class="slider-label">到第 <span id="seq-to-val">50</span> 题</label>
-              <input type="range" id="seq-to" min="1" max="100" value="50" step="1">
-            </div>
-            <div class="total-hint">共 <span id="seq-total">0</span> 题</div>
-          </div>
-          <!-- 打乱面板 -->
-          <div id="shuffle-panel" class="sub-panel hidden">
-            <label class="slider-label">随机题数：<span id="shuffle-val">20</span> 题 <span class="total-hint">/ 共 <span id="shuffle-total">0</span> 题</span></label>
-            <input type="range" id="shuffle-count" min="5" max="100" value="20" step="1">
-            <div class="total-hint" id="shuffle-ratio"></div>
-          </div>
-          <button id="start-type" class="primary-btn">开始做题</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 答题页 -->
-    <section id="quiz" class="screen hidden">
-      <div class="quiz-top">
-        <a class="back" href="index.html">← 返回</a>
-        <span id="quiz-progress" class="quiz-progress"></span>
-        <span id="quiz-score" class="quiz-score"></span>
-      </div>
-
-      <!-- 选择题/判断题 布局 -->
-      <div id="quiz-choice" class="quiz-body">
-        <div id="locate-hint" class="locate-hint"></div>
-        <div id="question-stem" class="question-stem"></div>
-        <div id="options" class="options"></div>
-        <div id="feedback" class="feedback"></div>
-        <div id="explanation" class="explanation"></div>
-      </div>
-
-      <div class="quiz-nav">
-        <button id="prev-btn" class="nav-btn">← 上一道</button>
-        <button id="submit-btn" class="primary-btn hidden">提交</button>
-        <button id="next-btn" class="nav-btn">下一道 →</button>
-      </div>
-    </section>
-
-    <!-- 测试结果页 -->
-    <section id="result" class="screen hidden">
-      <h2 class="section-label">测试结束</h2>
-      <div id="result-score" class="result-score"></div>
-      <div id="result-detail" class="result-detail"></div>
-      <div class="mode-buttons">
-        <a class="primary-btn" id="result-back" href="#">返回</a>
-      </div>
-      <button id="redo-btn" class="redo-btn hidden">重做</button>
-    </section>
+  <div class="farewell">
+    <p class="l1">谢谢你还记得这个网页</p>
+    <p class="l2">祝你以后开心轻松快乐！</p>
   </div>
-
-  <script src="questions.js"></script>
-  <script src="app.js"></script>
 </body>
 </html>
