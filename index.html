@@ -1,49 +1,677 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>刷题</title>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    html,body{
-      width:100%;height:100%;
-      background:linear-gradient(160deg,#dcefe2,#e6f1e9);
-      background-attachment:fixed;
-      font-family:"Microsoft YaHei","PingFang SC",sans-serif;
-      -webkit-font-smoothing:antialiased;
-      color:#213027;
-    }
-    .farewell{
-      width:100vw;height:100vh;
-      display:flex;flex-direction:column;
-      justify-content:center;align-items:center;
-      text-align:center;
-      padding:0 24px;
-    }
-    .farewell .l1{
-      font-size:2.8rem;
-      font-weight:600;
-      line-height:1.8;
-      letter-spacing:.06em;
-    }
-    .farewell .l2{
-      font-size:3.8rem;
-      font-weight:700;
-      line-height:1.6;
-      letter-spacing:.08em;
-      color:#1a6b42;
-    }
-    @media(max-width:600px){
-      .farewell .l1{font-size:2rem}
-      .farewell .l2{font-size:2.6rem}
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>治安疏 · 皇家折子互动阅读系统</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ================= 设计变量（Design Tokens） ================= */
+:root{
+  --canvas-bg:#F7F6F2;
+  --cover-grad:linear-gradient(135deg,#F3B748 0%,#D89218 50%,#B47209 100%);
+  --page-bg:#FCF7E8;
+  --page-hi:#FFFDF6;
+  --page-lo:#F5ECD6;
+  --crease-shadow:linear-gradient(to right, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.02) 20%, rgba(0,0,0,0) 50%, rgba(0,0,0,0.03) 80%, rgba(0,0,0,0.12) 100%);
+  --grid-red:#A32626;
+  --ink-black:#1D1815;
+  --ink-soft:#4A4238;
+  --ink-faint:#8A7C68;
+  --highlight-red:#E63946;
+  --gold:#D4A347;
+  --gold-deep:#8C2216;
+  --fit:1;
+  --page-w:300px;
+  --page-h:680px;
+  --pad-x:26px;
+  --pad-y:24px;
+  --pitch:41.333px;
+  --brush:"Ma Shan Zheng","Kaiti","STKaiti","BiauKai","Noto Serif SC",serif;
+  --serif:"Noto Serif SC","Source Han Serif SC","STKaiti","KaiTi","SimSun",serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  background:var(--canvas-bg);
+  color:var(--ink-black);
+  font-family:var(--serif);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* ================= 舞台：左侧 64% 沉浸奏折视窗 ================= */
+#stage{position:fixed;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;z-index:2}
+#spread{
+  position:relative;width:calc(var(--page-w)*2);height:var(--page-h);
+  transform:translateX(var(--shift,-150px)) scale(var(--fit));
+  transition:transform .95s cubic-bezier(.25,.8,.28,1);
+  perspective:2200px;perspective-origin:50% 46%;
+}
+#spread.opened{--shift:0}
+#spread .spreadPages{position:absolute;inset:0;opacity:0;transition:opacity .45s ease}
+#spread.pagesOn .spreadPages{opacity:1}
+
+/* 中缝（折痕轴） */
+.spine{position:absolute;left:calc(var(--page-w) - 13px);top:0;bottom:0;width:26px;z-index:4;pointer-events:none;
+  background:linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,.07) 42%, rgba(0,0,0,.14) 50%, rgba(0,0,0,.07) 58%, rgba(0,0,0,0) 100%)}
+.floorShadow{position:absolute;left:2%;right:2%;bottom:-26px;height:34px;border-radius:50%;
+  background:radial-gradient(50% 100% at 50% 50%, rgba(90,70,35,.20), rgba(90,70,35,0) 72%);z-index:1}
+
+/* ================= 内页：澄心堂明黄宣纸 ================= */
+.pagePaper{position:absolute;top:0;width:var(--page-w);height:var(--page-h);overflow:hidden;
+  background:linear-gradient(173deg,var(--page-hi) 0%,var(--page-bg) 45%,var(--page-lo) 100%);
+  border-radius:1px;
+  box-shadow:0 18px 44px rgba(110,85,35,.16),0 3px 10px rgba(110,85,35,.08)}
+.pagePaper.right{left:var(--page-w)}
+.pagePaper.left{left:0}
+.pagePaper .crease{position:absolute;inset:0;z-index:2;pointer-events:none;background:var(--crease-shadow)}
+.pagePaper .frame{position:absolute;z-index:3;pointer-events:none;inset:13px;border:1.7px solid rgba(163,38,38,.72)}
+.pagePaper .frame::after{content:"";position:absolute;inset:3.5px;border:.7px solid rgba(163,38,38,.34)}
+.pagePaper .grid{position:absolute;z-index:1;pointer-events:none;inset:var(--pad-y) var(--pad-x);
+  background:repeating-linear-gradient(to left,
+    rgba(163,38,38,0) 0, rgba(163,38,38,0) calc(var(--pitch) - 1px),
+    rgba(163,38,38,.46) calc(var(--pitch) - 1px), rgba(163,38,38,.46) var(--pitch))}
+.pagePaper .content{position:absolute;z-index:2;inset:var(--pad-y) var(--pad-x)}
+.pagePaper .cols{display:flex;flex-direction:row-reverse;width:100%;height:100%}
+.pagePaper .col{width:var(--pitch);flex:none;height:100%;
+  writing-mode:vertical-rl;text-orientation:upright;
+  font-family:var(--brush);
+  font-size:24px;line-height:1.72;letter-spacing:.22em;
+  color:var(--ink-black);text-align:start;
+  text-shadow:0 0 0 var(--ink-black)}
+.chunk{transition:background .22s ease,box-shadow .22s ease,color .22s ease;border-radius:2px;cursor:default}
+.chunk.lit{background:rgba(230,57,70,.13);box-shadow:0 0 14px 4px rgba(230,57,70,.13);color:#8E1F20}
+.lift{padding-inline-start:.9em}
+
+/* ================= 翻叶（双叶合折） ================= */
+.leaf{position:absolute;top:0;width:var(--page-w);height:var(--page-h);z-index:6;visibility:hidden;
+  transform-style:preserve-3d;will-change:transform;pointer-events:none}
+#leafR{left:var(--page-w);transform-origin:left center}
+#leafL{left:0;transform-origin:right center}
+.leafFace{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.leafFace.back{transform:rotateY(180deg)}
+.leafShade{position:absolute;inset:0;z-index:9;opacity:0;pointer-events:none}
+
+/* ================= 封面：内务府明黄织锦（Phase 1） ================= */
+#cover{position:absolute;left:var(--page-w);top:0;width:var(--page-w);height:var(--page-h);z-index:8;
+  transform-origin:left center;transform-style:preserve-3d;cursor:pointer;
+  transition:transform .95s cubic-bezier(.28,.76,.26,1)}
+#cover.opened{transform:rotateY(-180deg)}
+.coverFace{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.coverFace.back{transform:rotateY(180deg)}
+.coverSilk{position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.05) 0 2px, rgba(255,255,255,0) 2px 4px),
+    repeating-linear-gradient(-45deg, rgba(120,60,0,.06) 0 2px, rgba(120,60,0,0) 2px 4px),
+    var(--cover-grad);
+  background-color:var(--cover-grad);
+  border:2px solid #8C2216;
+  outline:1px solid #D4A347;
+  outline-offset:-5px;
+  box-shadow:0 26px 60px rgba(140,95,20,.30),0 4px 14px rgba(140,95,20,.18)}
+.coverSilk::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,0) 34%)}
+.coverFloat{position:absolute;inset:0;animation:breathe 4.6s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.coverLabel{position:absolute;top:9%;right:17%;width:64px;height:340px;
+  background:linear-gradient(180deg,#FEFBEF,#F6EDD5);
+  border:1px solid #C9B586;box-shadow:0 4px 14px rgba(90,55,5,.32),inset 0 0 0 2px rgba(201,181,134,.28);
+  display:flex;flex-direction:column;align-items:center;padding-top:14px}
+.coverLabel .t{writing-mode:vertical-rl;text-orientation:upright;
+  font-family:var(--brush);font-size:38px;line-height:1.04;letter-spacing:.1em;color:var(--ink-black)}
+.coverLabel .s{margin-top:10px;writing-mode:vertical-rl;text-orientation:upright;
+  font-size:10.5px;letter-spacing:.42em;color:#7A6A4C}
+.coverCap{position:absolute;left:17%;top:12%;writing-mode:vertical-rl;text-orientation:upright;
+  font-size:12.5px;letter-spacing:.5em;color:#4E2E06}
+.sealBlock{position:absolute;left:18.5%;bottom:12%;display:flex;flex-direction:column;align-items:center;gap:10px}
+.sealBlock .caption{writing-mode:vertical-rl;text-orientation:upright;font-size:9.5px;letter-spacing:.36em;color:#5B3410}
+.seal{width:56px;height:56px;border-radius:3px;
+  background:linear-gradient(150deg,#B03424,#8C2216);
+  box-shadow:0 3px 10px rgba(140,34,22,.45),inset 0 0 8px rgba(0,0,0,.28);
+  display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;
+  font-family:var(--brush);color:#FBF3DF;font-size:17px;line-height:1;
+  padding:4px}
+.seal span{display:flex;align-items:center;justify-content:center}
+.coverOpen{position:absolute;left:50%;top:64%;transform:translate(-50%,-50%);
+  appearance:none;border:1px solid rgba(140,34,22,.65);border-radius:6px;cursor:pointer;
+  background:rgba(255,251,239,.92);color:#8C2216;
+  font-family:var(--serif);font-size:13px;letter-spacing:.32em;text-indent:.32em;
+  padding:12px 22px;white-space:nowrap;
+  box-shadow:0 0 0 0 rgba(212,163,71,.55),0 8px 22px rgba(90,55,5,.22);
+  animation:glow 2.6s ease-in-out infinite}
+.coverOpen:hover{background:#FFFDF6}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(212,163,71,.55),0 8px 22px rgba(90,55,5,.22)}
+  50%{box-shadow:0 0 0 9px rgba(212,163,71,0),0 8px 26px rgba(90,55,5,.28)}}
+
+/* ================= 右侧：释读与历史背景台 ================= */
+#sidebar{position:fixed;left:calc(50% + 310px);right:auto;top:50%;transform:translateY(-50%);
+  width:400px;max-height:84vh;z-index:5;
+  background:#FFFFFF;border-radius:8px;
+  box-shadow:0 15px 35px rgba(0,0,0,0.06);
+  border:1px solid rgba(29,24,21,.06);
+  padding:22px 24px 20px;overflow-y:auto;
+  opacity:0;visibility:hidden;transition:opacity .5s ease,transform .5s ease}
+#sidebar.on{opacity:1;visibility:visible}
+.sb-head{display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid rgba(163,38,38,.18)}
+.sb-seal{flex:none;width:40px;height:40px;border-radius:4px;background:linear-gradient(150deg,#B03424,#8C2216);
+  color:#FBF3DF;font-family:var(--brush);font-size:15px;line-height:1.05;
+  display:flex;align-items:center;justify-content:center;text-align:center;letter-spacing:.02em}
+.sb-head h2{font-size:15px;letter-spacing:.24em;color:var(--ink-black);font-weight:700}
+.sb-head p{margin-top:4px;font-size:11px;letter-spacing:.16em;color:var(--ink-faint)}
+.sb-body{margin-top:14px;transition:opacity .25s ease}
+.sb-body.fading{opacity:0}
+.sb-sec{margin-top:13px}
+.sb-sec h3{font-size:11.5px;letter-spacing:.3em;color:var(--grid-red);font-weight:700;margin-bottom:5px}
+.sb-sec h3::before{content:"【";margin-right:.34em}
+.sb-sec h3::after{content:"】";margin-left:.34em}
+.sb-sec p{font-size:13.5px;line-height:1.92;color:var(--ink-soft);text-align:justify}
+.sb-sec.orig p{color:var(--ink-black);font-weight:500;letter-spacing:.02em}
+.sb-sec.orig p .k{color:var(--grid-red);font-weight:700}
+
+/* ================= 控制器与工具栏 ================= */
+#controls{position:fixed;left:32%;transform:translateX(-50%);
+  bottom:22px;z-index:20;display:flex;align-items:center;gap:14px}
+.qv{appearance:none;cursor:pointer;font-family:var(--serif);font-size:11px;letter-spacing:.06em;
+  color:#8C2216;background:rgba(163,38,38,.06);border:1px solid rgba(163,38,38,.28);
+  border-radius:4px;padding:3px 7px;margin:2px 4px 2px 0;transition:background .2s}
+.qv:hover{background:rgba(163,38,38,.14)}
+#controls button{appearance:none;cursor:pointer;cursor:pointer;font-family:var(--serif);
+  font-size:12.5px;letter-spacing:.26em;text-indent:.26em;color:#6B5F4C;
+  background:#FFFFFF;border:1px solid rgba(29,24,21,.12);border-radius:6px;
+  padding:9px 16px;transition:all .2s;box-shadow:0 6px 16px rgba(110,85,35,.08)}
+#controls button:hover:not(:disabled){color:#8C2216;border-color:rgba(163,38,38,.45)}
+#controls button:disabled{opacity:.35;cursor:not-allowed}
+#spreadNum{min-width:190px;text-align:center;font-size:12.5px;letter-spacing:.3em;color:#6B5F4C}
+#spreadNum b{color:var(--grid-red);font-weight:700}
+#hudbar{position:fixed;left:28px;top:24px;z-index:20;display:flex;align-items:center;gap:4px;
+  background:#FFFFFF;border:1px solid rgba(29,24,21,.08);border-radius:8px;padding:4px;
+  box-shadow:0 10px 26px rgba(110,85,35,.10);opacity:0;transition:opacity .6s ease}
+#hudbar.on{opacity:1}
+#hudbar button{appearance:none;border:0;background:transparent;cursor:pointer;
+  font-family:var(--serif);font-size:12.5px;letter-spacing:.18em;color:#5A4F3F;
+  height:32px;min-width:36px;padding:0 10px;border-radius:6px;transition:all .2s}
+#hudbar button:hover{background:rgba(163,38,38,.07);color:var(--grid-red)}
+#hudbar button.active{background:var(--grid-red);color:#FFF6E3}
+#hudbar .sep{width:1px;height:18px;background:rgba(29,24,21,.10);margin:0 4px}
+
+@media (max-width:1180px){
+  #stage{width:100%;height:54vh;top:60px;bottom:auto}
+  #spread{--shift:-150px}
+  #hudbar{top:12px;left:10px;bottom:auto}
+  #hudbar button{font-size:11.5px;height:28px;min-width:30px;padding:0 7px;letter-spacing:.1em}
+  #controls{left:auto;right:10px;top:12px;bottom:auto;transform:none;gap:4px}
+  #controls button{padding:6px 8px;font-size:11px;letter-spacing:.04em;text-indent:0}
+  #spreadNum{min-width:auto;font-size:11px;letter-spacing:.06em}
+  #sidebar{left:50%;right:auto;top:auto;bottom:10px;transform:translateX(-50%);
+    width:min(680px,94vw);max-height:42vh;padding:14px 16px}
+  #sidebar h2{font-size:13.5px}
+}
+</style>
 </head>
 <body>
-  <div class="farewell">
-    <p class="l1">谢谢你还记得这个网页</p>
-    <p class="l2">祝你以后开心轻松快乐！</p>
+<main id="stage">
+  <div id="spread">
+    <div class="floorShadow"></div>
+    <div class="spreadPages">
+      <div class="pagePaper right" id="pageR"></div>
+      <div class="pagePaper left" id="pageL"></div>
+      <div class="spine"></div>
+    </div>
+    <div class="leaf" id="leafR"></div>
+    <div class="leaf" id="leafL"></div>
+    <div id="cover">
+      <div class="coverFace front">
+        <div class="coverSilk">
+          <div class="coverFloat">
+            <div class="coverCap">户部主事臣海瑞冒死谨奏</div>
+            <div class="coverLabel"><span class="t">治安疏</span><span class="s">明 · 海瑞 谨奏</span></div>
+            <div class="sealBlock">
+              <div class="seal"><span>海</span><span>瑞</span><span>谨</span><span>奏</span></div>
+            </div>
+            <button class="coverOpen" id="openBtn">御览 · 点击展折</button>
+          </div>
+        </div>
+      </div>
+      <div class="coverFace back"><div class="coverSilk" style="background:#FCF7E8;border:2px solid #E4D7B6"></div></div>
+    </div>
   </div>
+</main>
+
+<aside id="sidebar" aria-live="polite">
+  <div class="sb-head">
+    <div class="sb-seal">释读</div>
+    <div><h2>治安疏 · 释读台</h2><p id="sbAt">展折以观 · 悬停正文联动</p></div>
+  </div>
+  <div class="sb-body" id="sbBody">
+    <div class="sb-sec orig"><h3>原典句读</h3><p id="sbOrig">户部云南清吏司主事臣海瑞谨奏：为直言天下第一事，以正君道，明臣职，求万世治安事。</p></div>
+    <div class="sb-sec"><h3>白话通解</h3><p id="sbTrans">户部云南清吏司主事臣海瑞恭敬上奏：为了直陈天下第一件大事，用以匡正为君之道、明确为臣之职，求得天下万世的长治久安。</p></div>
+    <div class="sb-sec"><h3>切弊背景</h3><p id="sbHist">底本用明·海瑞《备忘集》卷一《治安疏》，参校《明史·海瑞传》。疏上于嘉靖四十五年二月，时海瑞官户部主事；全文析为三十四段，两段合一折，共十五折。</p></div>
+  </div>
+</aside>
+
+<div id="controls">
+  <button id="btnPrev">上一折</button>
+  <div id="spreadNum">第 <b>一</b> 折 ／ 共 <b>十五</b> 折</div>
+  <button id="btnNext">下一折</button>
+</div>
+
+<div id="hudbar">
+  <button id="btnPunct" class="active">句读</button>
+  <span class="sep"></span>
+  <button data-zoom="0.9">小</button>
+  <button data-zoom="1" class="active">中</button>
+  <button data-zoom="1.1">大</button>
+</div>
+
+<div id="tip" role="tooltip" style="position:fixed;z-index:90;max-width:320px;background:linear-gradient(172deg,#FFFEFA,#FAF3E0);border:1px solid rgba(140,110,50,.35);border-top:3px solid var(--grid-red);border-radius:6px;box-shadow:0 18px 46px rgba(110,85,35,.20);padding:12px 15px;font-size:13px;line-height:1.76;color:var(--ink-soft);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .2s ease,visibility .2s"></div>
+<script>
+const CHUNKS=[
+/*1*/{id:"s2-1",t:"户部云南清吏司主事臣海瑞谨奏：为直言天下第一事，以正君道，明臣职，求万世治安事。",y:"户部云南清吏司主事臣海瑞恭敬上奏：为了直陈天下第一件大事，用以匡正为君之道、明确为臣之职，求得天下万世的长治久安。",n:"嘉靖四十五年（1566）二月，海瑞以正六品户部主事之身拜疏。「直言天下第一事」点明全篇宗旨——君道不正、臣职不明，乃天下第一等大事。海瑞上疏前已市棺诀妻，以死进谏。疏末「治安」二字遥承汉贾谊《治安策》，故世称《治安疏》。"},
+/*2*/{id:"s3-1",t:"君者，天下臣民万物之主也。惟其为天下臣民万物之主，责任至重。凡民生利瘼，一有所不闻，将一有所不得知而行，其任为不称。",y:"君主，是天下臣民万物的主宰。正因为是天下臣民万物的主宰，责任最为重大。凡是关乎民生利弊之事，有一件听不到，便会有一件无从据以施行，那便是与君主之位不相称。",n:"利瘼（mò）：利病疾苦。开篇先立「君道—臣职」框架：君权至重，则君责至重——这是全篇立论之根，也是海瑞直谏的理论凭据。"},
+/*3*/{id:"s3-2",t:"是故养君之道，宜无不备，而以其责寄臣工，使尽言焉。臣工尽言，而君道斯称矣。",y:"所以辅助君主之道应当无所不备，而君主应把这份言责托付给群臣，使他们知无不言。群臣能够尽言，君道才算得上称职。",n:"养君：辅佐养成君德。臣工：群臣百官，语出《诗经》。君主的耳目就是群臣的直言——进谏正是人臣助君称职的本分，而非犯上。"},
+/*4*/{id:"s4-1",t:"昔之务为容悦、谀顺曲从，致使实祸蔽塞，主不上闻焉，无足言矣。过为计者，则又曰：「君子危明主，忧治世。」夫世则治矣，以不治忧之；主则明矣，以不明危之。毋乃使之反求眩瞀，失趋舍矣乎？非通论也。",y:"从前那些专事逢迎讨好、阿谀顺从，致使真实的祸患被遮蔽、君主无从听闻的人，自然不值一提。而另有一些过度谋算的人又说：「君子应使明主感到危惧，为治世感到忧虑。」世道已然安治，却拿不安治去忧它；君主已然圣明，却拿不圣明去危言耸听——这岂不是让人反而迷惘、失去取舍的方向吗？这不是通达之论。",n:"容悦：逢迎取容。眩瞀（xuàn mào）：目炫心迷。海瑞先破两种臣子：一味谄媚者与故作危言者。他自许走第三条路——据实直陈，是为「有犯无隐」。"},
+/*5*/{id:"s5-1",t:"臣受国恩厚矣，请执有犯无隐之义。美曰美，不一毫虚美；过曰过，不一毫讳过。不容悦，不过计，披肝胆为陛下言之。",y:"臣蒙受国恩深厚，请允许我秉持「敢于犯颜、绝不隐瞒」的道义：美就说是美，不增一丝虚夸之美；过就说是过，不避一丝当言之过。不为讨好，也不过分算计，披肝沥胆向陛下陈说。",n:"有犯无隐：语出《礼记·檀弓》「事君有犯而无隐」，儒家事君的直谏准则。此段是全疏宣言，语气克制而立场峻烈——不虚美、不讳过，正是下文「扬治世而斥君非」的笔法纲领。"},
+/*6*/{id:"s5-1",t:"汉贾谊陈政事于文帝曰：「进言者皆曰天下已安已治矣，臣独以为未也。曰安且治者，非愚则谀。」夫文帝，汉贤君也，贾谊非苛责备也。文帝性仁类柔，慈恕恭俭，虽有近民之美；优游退逊，尚多怠废之政。不究其弊所不免，概以安且治当之，愚也；不究其才所不能，概以致安治颂之，谀也。",y:"汉代贾谊向文帝陈说政事时讲：「进言的人都说天下已经安定大治了，唯独我以为不然。说安定大治的，不是愚蠢就是谄谀。」文帝是汉代的贤君，贾谊并非苛刻责备。文帝性情仁厚而偏于柔弱，慈恕恭俭，虽有亲近百姓之美；却优柔宽缓，多有怠惰荒废之政。不查究他难免的弊病，一概以安定大治肯定他，是愚；不度量他才力所不能及，一概以致治之功颂扬他，是谀。",n:"贾谊《陈政事疏》（即《治安策》）开篇即言「臣窃惟事势，可为痛哭者一」。海瑞此疏遥承贾谊，故世称《治安疏》。先立汉文帝这面「贤君之镜」——连贤君尚不能讳言其失，为下文对照嘉靖张本。"},
+/*7*/{id:"s6-1",t:"陛下自视于汉文帝何如？陛下天质英断，睿识绝人，可为尧、舜，可为禹、汤、文、武，下之如汉宣帝之励精，光武之大度，唐太宗之英武无敌，宪宗之专志平僭乱，宋仁宗之仁恕，举一节可取者，陛下优为之。",y:"陛下自认为与汉文帝相比如何？陛下天资英明果断，睿智见识超越常人，可以做尧、舜，可以做禹、汤、文王、武王；次一等如汉宣帝的励精图治、汉光武的恢宏气度、唐太宗的英武无敌、唐宪宗立志平定僭乱、宋仁宗的仁厚宽恕——凡此有一节可取者，陛下都足以胜任有余。",n:"先扬后抑之笔。历数尧舜禹汤文武与汉宣、光武、唐宗、宪宗、仁宗之长，极言嘉靖天资之高。正因禀赋绝伦，其后来的自弃才更令人痛惜——扬得越高，责得越痛。"},
+/*8*/{id:"s7-1",t:"即位初年，刬除积弊，焕然与天下更始。举其略，如箴敬一以养心，定冠履以辨分，除圣贤土木之像，夺宦官内外之权，元世祖毁不与祀，祀孔子推及所生。天下忻忻然以大有作为仰之。识者谓辅相得人，太平指日可期也。非虚语也，高汉文帝远甚。",y:"陛下即位初年，铲除积弊，气象焕然，与天下除旧布新。举其大概：如作《敬一箴》以修养心性，厘定冠服履制以辨明名分，撤除孔庙中圣贤的土木塑像，削夺宦官干预内外之权，将元世祖撤出帝王庙不使入祀，祭祀孔子而推及其先人。天下人欢欣鼓舞，仰望您大有作为。有识之士认为辅相得人，太平指日可待。这不是虚言——那时的您比汉文帝高明得多。",n:"此即史家所称「嘉靖新政」：御制《敬一箴》颁行学宫；嘉靖九年改革孔庙祀典、撤塑像易木主；元世祖退出历代帝王庙；裁革镇守中官。多赖杨廷和、张璁等辅臣推行——故云「辅相得人」。"},
+/*9*/{id:"s8-1",t:"然文帝能充其仁顺之性，节用爱人，吕祖谦称其能尽人之才力，诚是也。一时天下虽未可尽以治安予之，而贯朽粟陈，民少康阜，三代下称贤君焉。",y:"然而汉文帝能扩充他仁厚和顺的天性，节约用度、爱护百姓，吕祖谦称赞他能尽用人的才力，确实如此。当时天下虽还不能全以「治安」相称许，但国库的钱多到穿钱的绳子朽烂、太仓的粟陈陈相因，百姓稍得安康富足，三代以下都称他为贤君。",n:"贯朽粟陈：语出《史记·平准书》记文景之富——「京师之钱累巨万，贯朽而不可校；太仓之粟陈陈相因」。吕祖谦：南宋理学家。海瑞在此立下标尺：贤君之名不在天资，而在「节用爱人」的实绩。"},
+/*10*/{id:"s9-1",t:"陛下则锐精未久，妄念牵之而去矣，反刚明而错用之，谓遐举可得而一意修玄。富有四海，不曰民之膏脂在是也，而侈兴土木。",y:"陛下却锐意进取未能持久，被妄念牵引而去，把刚毅明断的天资用错了地方，以为飞升成仙可以求得，于是一心修道。富有天下，却不念财富本是百姓的膏血，反而奢侈地大兴土木。",n:"遐举：道家语，飞升成仙（底本一作「遥兴」）。修玄：修习玄道，指崇道斋醮。嘉靖中叶起移居西苑，大建斋宫秘殿。海瑞直断病根：非天资不足，而是「妄念」夺其心——刚明反被误用，最为可惜。"},
+/*11*/{id:"s10-1",t:"二十余年不视朝，纲纪弛矣；数行推广事例，名爵滥矣。二王不相见，人以为薄于父子；以猜疑诽谤戮辱臣下，人以为薄于君臣；乐西苑而不返宫，人以为薄于夫妇。",y:"陛下二十多年不上朝理政，国家纲纪松弛了；屡次推行捐纳事例，官爵名器滥授了。与两位皇子不相往来，人们认为您薄于父子之情；因猜疑臣下诽谤而加以杀戮侮辱，人们认为您薄于君臣之义；耽乐于西苑而不回大内，人们认为您薄于夫妇之恩。",n:"推广事例：开捐纳卖官之例，以济斋醮土木之费。二王不相见：道士陶仲文进「二龙不相见」之说，嘉靖遂与裕王（后为隆庆帝）、景王久不相见。西苑：今中南海、北海一带，壬寅宫变（1542）后帝长居于此。戮辱臣下：杨最、杨继盛等先后杖死狱中。父子、君臣、夫妇三伦俱伤，故云「三薄」。"},
+/*12*/{id:"s10-1",t:"天下吏贪将弱，民不聊生，水旱靡时，盗贼滋炽。自陛下登极初年，亦有之而未甚也。今赋役增常，万方则效。陛下破产礼佛日甚，室如悬磬，十余年来极矣。天下因即陛下改元之号而臆之曰：「嘉靖者，言家家皆净而无财用也。」",y:"如今天下官吏贪污、将帅羸弱，百姓无法生存，水灾旱灾没有定时，盗贼滋生蔓延。这些在陛下登基初年也曾有，但还不严重。如今赋税徭役超过常额，四方争相仿效搜刮。陛下倾尽家财崇道斋醮一天比一天厉害，国库空虚如高悬的石磬，十几年来到了极点。天下人于是借陛下改元的年号讽刺说：「嘉靖，就是说家家干净、没有财物可用啊。」",n:"室如悬磬：语出《国语》，形容空无所有。礼佛：此指崇道修醮之耗（一作「礼玄」）。「家家皆净」以年号谐音作谚谣，语极辛辣，为全疏最著名的一句。据载嘉靖读疏至此，掷之于地，勃然大怒。"},
+/*13*/{id:"s11-1",t:"迩者严嵩罢黜，世蕃极刑，差快人意，一时称清时焉。然严嵩罢相之后，犹之严嵩未相之先而已，非大清明世界也，不及汉文远甚。",y:"近来严嵩被罢免、严世蕃伏诛，总算大快人心，一时间号称清明之世。然而严嵩罢相之后，天下不过回到严嵩未当政之前的样子罢了，并非大清明世界，比汉文帝之治差得远。",n:"严嵩：嘉靖朝权臣，秉政二十年，嘉靖四十一年（1562）罢相。世蕃：嵩之子，嘉靖四十四年伏诛。海瑞之意：弊政之根不在奸相一人——去一严嵩而天下未治，病根自在君上。"},
+/*14*/{id:"s11-2",t:"天下之人不直陛下久矣！内外臣工之所知也。",y:"天下人认为陛下不对，已经很久了！——这是朝廷内外百官人所共知的事。",n:"不直：不以为是。此句为千古名句。海瑞把天下人敢怒不敢言的话，直接说到了皇帝脸上。据《明史》，嘉靖掷疏于地，顾左右曰：「趣执之，无使得遁！」正为此等语也。"},
+/*15*/{id:"s12-1",t:"知之不可谓愚。《诗》云：「衮职有阙，惟仲山甫补之。」今日所赖以弼棐匡救，格非而归之正，诸臣责也。岂以圣人而绝无过举哉？古昔设官，亮采惠畴足矣，不必责之以谏；保氏掌谏王恶，不必设也；木绳金砺，圣贤不必言之也。",y:"知道这些，就不能说是愚昧。《诗经》说：「天子的职事有了缺失，只有仲山甫来补正。」如今所赖以辅弼匡救、纠正错失使归于正道的，正是群臣的责任。岂能因陛下圣明就绝无过失之举？果真如此，那么古代设官，办事称职就够了，不必责令进谏；保氏一职专掌规谏王之恶，也不必设置了；「木受绳则直，金就砺则利」这样的话，圣贤也不必说了。",n:"衮职二句：出《诗经·大雅·烝民》，仲山甫为周宣王贤臣。弼棐（fěi）：辅弼。亮采惠畴：出《尚书·舜典》，办事称职之意。保氏：《周礼》官名，掌谏王恶。木绳金砺：语本《尚书·说命》。海瑞以经义立证：谏官之设，自古为补君之阙——我的直谏，不过是尽「诸臣之责」。"},
+/*16*/{id:"s13-1",t:"乃醮修相率进香，天桃天药，相率表贺。兴宫室，工部极力经营；取香觅宝，户部差求四出。",y:"可如今陛下修斋设醮，群臣便相随进香；天降「仙桃」「天药」，群臣便争相上表称贺。兴建宫室，工部极力经营；搜取香料觅求珍宝，户部派员四方求索。",n:"仙桃天药：嘉靖晚年屡有方士佞臣进献「仙桃」「仙药」以为祥瑞，百官依例上表庆贺。醮修进香、兴造宫室、四出求索——斋醮之费由六部公然开销，国库为之空耗。"},
+/*17*/{id:"s14-1",t:"陛下误举，诸臣误顺，无一人为陛下一正言焉。都俞吁咈之风，陈善闭邪之义，邈无闻矣，谀之甚也。然愧心馁气，退有后言，以从陛下；昧没本心，以歌颂陛下，欺君之罪何如？",y:"陛下举动有误，群臣却顺承这个错误，没有一人向陛下进一句正直之言。君臣间都俞吁咈的议政之风、陈善闭邪的辅弼之义，渺茫无闻了——谄谀到了极点。然而他们内心惭愧气馁，退朝之后又有非议；一面依从陛下，一面昧着本心歌颂陛下，这种欺君之罪又该如何论处？",n:"都俞吁咈（dū yú xū fú）：出《尚书》，君臣议事时应答与驳议之声，形容庙堂论政的和而不同。陈善闭邪：出《孟子》，陈述善道、防闭邪心。海瑞点破这出君臣合演的荒诞剧——皇帝装神，群臣捧场，退朝又各自腹诽。"},
+/*18*/{id:"s14-1",t:"夫天下者，陛下之家也。人未有不顾其家者，内外臣工皆所以奠陛下之家而磐石之者也。一意修真，是陛下之心惑；过于苛断，是陛下之情偏。而谓陛下不顾其家，人情乎？",y:"天下，就是陛下的家。人没有不顾惜自己家的，内外群臣都是用来奠定陛下之家、使它坚如磐石的人。一心修道成仙，是陛下的心被迷惑了；用刑过于苛刻独断，是陛下的情有了偏差。若说陛下竟不顾惜自己的家——这合乎人情吗？",n:"海瑞此处为嘉靖「留地步」：不斥君无德，而曰「心惑」「情偏」——心可悟，情可正。以「家」喻天下，既抬举对方，又为下文「翻然悔悟」预开门径，谏书收放之笔。"},
+/*19*/{id:"s15-1",t:"诸臣徇私废公，得一官多以欺败、多以不事事败，实有不足当陛下意者。其不然者，君心臣心偶不相值也，而遂谓陛下厌薄臣工，是以拒谏。执一二之不当，疑千百之皆然，陷陛下于过举而恬不知怪，诸臣之罪大矣。《记》曰：「上人疑则百姓惑，下难知则君长劳。」此之谓也。",y:"群臣也有徇私废公之处，得了一个官职，多因欺罔而败、多因无所事事而败，确实也有不足以称陛下心意的人。但那些不这样的臣子，不过是君心与臣心偶然不合；若因此就说陛下厌恶鄙薄群臣，那等于陛下是拒绝劝谏。抓住一两个不当之处，便怀疑千百人全都如此，使陛下陷于错误的举动而泰然不觉其怪——群臣的罪就大了。《礼记》说：「在上位的人多疑，百姓就会迷惑；在下位者的心思难以察知，君主就会劳苦。」说的就是这个道理。",n:"《记》曰二句：出《礼记·缁衣》。海瑞笔锋回转，也问责群臣——非一味骂皇帝：臣自有其罪，但君不可因此「拒谏」。君道、臣职两条主线在此交织，各当其罪，方见公道。"},
+/*20*/{id:"s16-1",t:"且陛下之误多矣，其大端在于斋醮。斋醮所以求长生也。自古圣贤垂训，修身立命曰「顺受其正」矣，未闻有所谓长生之说。",y:"况且陛下的错失很多，最大的症结在于斋戒设醮。斋醮是用来祈求长生的。自古圣贤留下的教诲，修身立命只说「顺应正道、承受正命」，从未听说有什么长生不死之说。",n:"斋醮（jiào）：道教设坛祭祷仪式。嘉靖长年于西苑建醮焚修，所用青词多由严嵩、徐阶等词臣代撰，时讥「青词宰相」。顺受其正：语出《孟子·尽心上》「莫非命也，顺受其正」——海瑞以儒家性命之学，正面破道教长生之妄。"},
+/*21*/{id:"s17-1",t:"尧、舜、禹、汤、文、武，圣之盛也，未能久世；下之，亦未见方外士自汉、唐、宋至今存者。陛下受术于陶仲文，以师称之。仲文则既死矣，彼不长生，而陛下何独求之？",y:"尧、舜、禹、汤、文王、武王，是圣人的极致，也未能永存于世；往下说，也没见过哪个方外之士从汉、唐、宋一直活到今天。陛下从陶仲文那里接受方术，以「师」相称。陶仲文已经死了——他自己都不能长生，陛下为什么偏偏还去求长生呢？",n:"陶仲文：湖北黄冈道士，深为世宗宠信，官至礼部尚书，封「秉一真人」，死后赠谥。方外士：僧道术士之流。此段是绝妙的逻辑反证：师既不能长生，弟子何求？以最朴素的事实，击穿最顽固的迷信。"},
+/*22*/{id:"s18-1",t:"至于仙桃天药，怪妄尤甚。昔宋真宗得天书于乾祐山，孙奭曰：「天何言哉？岂有书也！」桃必采而后得，药必制而后成。今无故获此二物，是有足而行耶？曰「天赐者」，有手执而付之耶？",y:"至于所谓仙桃天药，怪诞虚妄得更厉害。从前宋真宗在乾祐山得到「天书」，孙奭就说：「上天何曾说过话？哪里会有什么书！」桃子必定有人采摘才能得到，药必定要人工炮制才能制成。如今平白无故获得这两样东西，难道它们长着脚自己走来的吗？说是「上天所赐」，难道上天有手拿着交给您吗？",n:"宋真宗天书：大中祥符元年（1008），王钦若等导演「天书降临」的闹剧，真宗借此东封西祀，耗竭国库。孙奭（shì）：北宋经学家，引《论语》「天何言哉」力谏。海瑞引前朝覆辙——逻辑与史实双重夹击，痛快淋漓。"},
+/*23*/{id:"s19-1",t:"此左右奸人造为妄诞以欺陛下，而陛下误信之，以为实然，过矣。陛下又将谓悬刑赏以督责臣下，则分理有人，天下无不可治，而修真为无害已乎？",y:"这是陛下身边的奸人编造虚妄荒诞之事来欺骗陛下，陛下却误信了，以为真有其事——这就错了。陛下或许又要说：我高悬刑罚与赏赐来督责臣下，自有分工理事之人，天下没有治理不好的，修道求仙应当没有妨害吧？",n:"先断「仙桃天药」为奸人骗局，再预设嘉靖的自我辩护——「悬刑赏而垂拱」。嘉靖确持此术：自居西苑遥控朝政，以玄修为名行驭下之实。海瑞先把对方的退路摆出来，下文逐条击碎。"},
+/*24*/{id:"s20-1",t:"太甲曰：「有言逆于汝心，必求诸道；有言逊于汝志，必求诸非道。」用人而必欲其唯言莫违，此陛下之计左也。即观严嵩，有一不顺陛下者乎？昔为同心，今为戮首矣。梁材守道守官，陛下以为逆者也，历任有声，官户部者至今首称之。",y:"太甲说：「有些话违背你的心意，一定要从道义上推求它；有些话顺从你的心志，一定要从不合道义处推求它。」用人而一定要他唯命是从，这是陛下的计谋用错了。就看严嵩——他有一点不顺从陛下吗？从前与陛下同心，如今成了被诛戮的首犯。梁材恪守正道、恪守官守，陛下却认为他逆忤；他历任都有政声，任职户部的人至今仍首推他。",n:"太甲二句：出《尚书·太甲下》，伊尹训太甲之辞。严嵩事事顺旨，终致子诛籍没；梁材：嘉靖初户部尚书，屡忤帝意而罢，去后国用匮乏，人始思之。一顺一逆，对照如刃：顺者亡国蠹，逆者社稷臣。"},
+/*25*/{id:"s21-1",t:"然诸臣宁为嵩之顺，不为材之逆，得非有以窥陛下之微，而潜为趋避乎？即陛下亦何利于是。",y:"然而群臣宁可学严嵩的顺从，也不愿学梁材的逆忤，莫不是因为他们窥见了陛下内心深处的好恶，而暗中趋利避害吗？——这样做，对陛下又有什么好处呢？",n:"诛心之论。官场风气，实由人主好恶养成；上有所喜，下必甚焉。满朝谄谀，病根在皇帝本人「喜顺恶逆」——不是群臣天生爱做小人，而是陛下的刑赏导向逼出了满朝「严嵩」。"},
+/*26*/{id:"s22-1",t:"陛下诚知斋醮无益，一旦翻然悔悟，日御正朝，与宰相、侍从、言官讲求天下利害，洗数十年之积误，置身于尧、舜、禹、汤、文、武之间，使诸臣亦得自洗数十年阿君之耻，置其身于皋、夔、伊、傅之列。天下何忧不治？万事何忧不理？此在陛下一振作间而已。",y:"陛下若真能明白斋醮毫无益处，有朝一日幡然悔悟，每天亲临正朝，与宰相、侍从、言官讲求天下利病，洗刷数十年积累的错误，把自身置于尧、舜、禹、汤、文、武的行列；让群臣也能洗去数十年逢迎君主的耻辱，把自身置于皋陶、夔、伊尹、傅说的行列。天下何愁不治？万事何愁不理？——这只在陛下一次振作之间罢了。",n:"皋、夔：舜之贤臣；伊尹辅商汤，傅说辅武丁。阿（ē）君：曲意逢迎君主。全疏由「破」转「立」的枢纽——海瑞并非一味痛斥，而是为嘉靖指出台阶：一振作，君臣皆可洗耻、同跻圣域。苦口良药中自有殷切期待。"},
+/*27*/{id:"s23-1",t:"释此不为，而切切于轻举度世，敝精劳神，以求之于系风捕影、茫然不可知之域，臣见劳苦终身，而终于无所成也。",y:"放着这条路不走，却急切地追求飞升度世，耗散精神、劳苦心志，在捆风捉影、茫然不可知的境地中去寻求——臣只看见您劳苦一辈子，而最终一事无成。",n:"轻举度世：道家语，飞升成仙、超脱尘世。系风捕影：语出《汉书·郊祀志》，谓虚不可求。一句「劳苦终身，终于无所成」，为嘉靖二十余年斋醮下了冷峻判词。"},
+/*28*/{id:"s23-2",t:"官有职掌。先年职守之正、职守之全而未行之；今日职守之废、职守之苟且因循，不认真、不尽法而自以为是。",y:"官员各有职掌。从前的制度本有职守之正、职守之全，却没有施行；如今则是职守废弛，苟且因循，不认真、不尽法度，还自以为是。",n:"由君道转入臣职。海瑞以户部主事的实务眼光点破官僚痼疾：非无好制度，而是无人认真执行。「苟且因循」四字，道尽明代中叶行政的疲沓。"},
+/*29*/{id:"s24-1",t:"敦本行以端士习，止上纳以清仕途，久任吏将以责成功；练选军士以免召募，驱缁黄游食使归四民；责府州县兼举富教，使成礼俗；复屯盐本色以裕边储，均田赋丁差以苏困敝；举天下官之侵渔、将之怯懦、吏之为奸，刑之无少姑息焉。",y:"敦促士人笃实品行以端正士风，停止捐纳以澄清仕途，使文吏武将久于其任以责成功效；操练选拔军士以免临时招募，驱逐僧道中游荡寄生者使其回归士农工商；责成府州县官兼顾富民与教民，使礼俗养成；恢复屯田盐课的本色征收以充实边储，均平田赋丁差以解救百姓困乏；检举天下官员之侵吞渔利、将领之怯懦、吏胥之作奸，依法惩处而毫不姑息。",n:"上纳：捐钱粮买官。缁黄：僧衣缁、道冠黄，指僧道。屯盐本色：明代开中法，商人运粮实边换取盐引，后法坏改纳银，边储日匮。此段是海瑞的改革纲领，涵盖吏治、兵制、户口、财政、刑名——他不只是敢骂的谏臣，更是胸有实学的能臣。"},
+/*30*/{id:"s25-1",t:"必世之仁，博厚高明悠远之业，诸臣必有以陛下言者。诸臣言之，陛下行之，此则在陛下一振作间而已。一振作而诸废具举，百弊铲绝，唐、虞三代之治粲然复兴矣，而陛下何不行之？",y:"三十年方成仁政的大业、博大高明悠久的功业，群臣中一定会有人向陛下建言。群臣讲出来，陛下去施行——这也在陛下的一次振作之间。一次振作，则百废俱兴、百弊铲绝，唐尧虞舜与三代之治便光明灿烂地复兴了。陛下为什么不去做呢？",n:"必世之仁：语出《论语·子路》「如有王者，必世而后仁」，三十年为一世。唐虞：尧舜。以圣王之治相期，把门槛降到极低——「一振作间而已」，既是鼓励，也是激将。"},
+/*31*/{id:"s26-1",t:"节省之，振作之，又非有所劳于陛下也。九卿总其纲，百职分其任，抚按科道纠举肃清之于其间，陛下持大纲、稽治要而责成焉。劳于求贤，逸于任用，如天运于上，而四时六气各得其序也。",y:"节约用度、振作有为，又并不劳累陛下。九卿总揽大纲，百官分任其职，巡抚巡按与科道官在其中纠察举发、肃清积弊，陛下只需把住大纲、考核治绩、责其成效。在求贤上操劳，在任用上安逸——如同天道运行于上，四时六气自然各得其序。",n:"九卿：六部尚书及都察院、大理寺、通政使司等长官。科道：六科给事中与十三道监察御史，明代言官系统。海瑞描绘儒家理想的「君逸臣劳」格局——暗中反驳嘉靖「不视朝而天下自治」的幻想。"},
+/*32*/{id:"s27-1",t:"天地万物为一体，固有之性也。民物熙洽，薰为太和，而陛下性分中自有真乐矣。可以赞天地之化育，则可与天地参。道与天通，命由我立，而陛下性分中自有真寿矣。此理之所有者，可旋至而立有效者也。",y:"天地万物本为一体，这是人本有的天性。万民和洽，熏陶成太平和气，陛下的天性中自然有真正的快乐。能够赞助天地的化育，就可以与天地并立为三。大道与上天相通，寿命由我自己建立——陛下的天性中自然有真正的长寿。这些道理本就存在，转瞬可达、立刻见效。",n:"与天地参：语出《中庸》。命由我立：化用儒家立命之说。海瑞以理学消解方术——真乐不在丹药而在民安，真寿不在长生而在德业。以嘉靖所慕之「道」与「寿」，反其道而正解之：诛方术之心，立圣贤之志。"},
+/*33*/{id:"s28-1",t:"夫君道不正，臣职不明，此天下第一事也。于此不言，更复何言？大臣持禄而外为谀，小臣畏罪而面为顺，陛下诚有不得知而改之行之者，臣每恨焉。是以昧死竭忠，惓惓为陛下言之。",y:"君道不正、臣职不明，这是天下第一件大事。对此不进言，还有什么更值得进言？大臣保住俸禄而对外阿谀，小臣害怕获罪而当面顺从；陛下确实有因不得知而未能改正施行之事，臣常为此感到憾恨。所以冒死竭尽忠心，恳切不倦地向陛下陈说。",n:"惓惓（quán quán）：恳切貌。此处点题，回应篇首「直言天下第一事」。一「恨」字沉痛：恨的不是君恶，而是上下相蒙、陛下被隔绝于真相之外。海瑞自白动机：非为名，非为党争，只为破此壅蔽。"},
+/*34*/{id:"s29-1",t:"一反情易向之间，而天下之治与不治、民物之安与不安决焉。伏惟陛下留神，宗社幸甚，天下幸甚。臣不胜战栗恐惧之至，为此具本亲赍，谨具奏闻。",y:"在回心转意、改变去向的一念之间，天下的治与不治、万民的安与不安，就由此决定了。伏惟陛下留心留意，那将是宗庙社稷的万幸、天下苍生的万幸。臣不胜战栗恐惧之至，为此备办奏本亲自捧持，谨具奏闻。",n:"具本亲赍（jī）：依制备本、亲自捧进。「谨具奏闻」为明代奏疏结尾套语。「战栗恐惧」是格式，也是实情——海瑞上疏后即遣散僮仆、备棺待罪于朝，静候雷霆之怒。"},
+/*35*/{id:"s30-1",t:"疏入，帝怒掷于地，顾左右曰：「趣执之，无使得遁。」宦官黄锦曰：「此人素有痴名。闻其上疏时，自知触忤当死，市一棺，诀妻子，待罪于朝，僮仆亦奔散无留者，是不遁也。」帝默然。少顷复取读之，日再三，为感动太息，留中者数月。",y:"奏疏送入，嘉靖帝愤怒地把它摔在地上，对左右说：「快去抓他，别让他跑了。」宦官黄锦说：「此人一向有痴名。听说他上疏时自知触怒圣上当死，已买了一口棺材，诀别妻子，在朝房待罪，连僮仆都遣散了——他是不会跑的。」皇帝沉默不语。过一会儿又拿起奏疏再读，一日反复多次，被感动得叹息，把奏疏留在宫中数月。",n:"趣（cù）执之：赶快拿下。留中：奏疏留于宫中不批不发。黄锦时为司礼监太监，一言解于盛怒。《明史》此处笔法如剧：一怒、一掷、一默然，嘉靖复杂的心态跃然纸上。"},
+/*36*/{id:"s30-2",t:"帝尝曰：「此人可方比干，第朕非纣耳。」会帝有疾，烦懑不乐，召大学士徐阶议内禅，因曰：「海瑞言俱是。朕今病久，安能视事？」遂逮瑞下诏狱，究主使者。寻移刑部，论死。狱上，仍留中。逾二月，帝崩，穆宗立，以遗诏释之。瑞之直声，遂震天下。",y:"皇帝曾说：「此人可比商朝的比干，只是朕不是纣王罢了。」恰逢皇帝患病，心中烦闷，召大学士徐阶商议禅位，于是说：「海瑞说的都对。朕如今久病，怎能临朝视事？」随后仍将海瑞逮捕投入诏狱，追究主使之人。不久移送刑部，定为死罪。判决书呈上，又被留中不发。过了两个月，皇帝驾崩，穆宗即位，以先帝遗诏释放海瑞。海瑞的忠直之声，从此震动天下。",n:"比干：商纣王叔父，强谏被剖心。「朕非纣」一语，嘉靖自留体面，也救了海瑞一命。诏狱：锦衣卫北镇抚司狱。嘉靖四十五年十二月（1567 年初）帝崩，海瑞获释复官，后历应天巡抚、南京右都御史，万历十五年（1587）卒于任，谥忠介。——本页节录《明史·海瑞传》，略有删节。"},
+];
+
+/* ==================== 格律引擎：切栏 → 分页 → 对开 ==================== */
+let COL_MAX=21,COL_MIN=16;const COLS_PER_PAGE=6;
+const PUNCT_RE=/[，。；：？！、""''《》〈〉「」『』（）()—…·\s]/g;
+const $=s=>document.querySelector(s);
+const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+const plain=s=>s.replace(PUNCT_RE,"");
+const lift=s=>s.replace(/(陛下|宗社)/g,'<span class="lift">$1</span>');
+function cn(n){const d="〇一二三四五六七八九";if(n<=10)return n===10?"十":d[n];if(n<20)return "十"+(n%10?d[n%10]:"");return d[Math.floor(n/10)]+"十"+(n%10?d[n%10]:"");}
+const BREAKS="，。；：？！";
+/* 定栏切字：按栏数均分（上限 21 字），断点吸附句读，避免碎栏与稀排 */
+function splitByChars(text,cap){
+  cap=cap||COL_MAX;
+  const n=Math.ceil(text.length/cap);
+  if(n<=1)return [text];
+  const target=text.length/n;
+  const out=[];let i=0;
+  for(let c=0;c<n-1;c++){
+    const ideal=Math.round(i+target);
+    const lo=Math.max(i+Math.floor(target*0.68),i+1);
+    const hi=Math.min(i+Math.ceil(target*1.22),text.length-1,i+cap);
+    let end=-1;
+    for(let k=ideal;k<=hi;k++){if(BREAKS.indexOf(text[k-1])>=0){end=k;break;}}
+    if(end<0)for(let k=Math.min(ideal-1,hi);k>=lo;k--){if(BREAKS.indexOf(text[k-1])>=0){end=k;break;}}
+    if(end<0)end=Math.min(Math.max(ideal,i+1),i+cap,text.length);
+    out.push(text.slice(i,end));i=end;
+  }
+  out.push(text.slice(i));
+  return out.filter(s=>s.length);
+}/* 逐段切栏后连贯密排：每页严格 6 栏，双页对开 */
+function paginate(chunks){
+  const cols=[];
+  chunks.forEach((c,ci)=>{
+    splitByChars(c.t,COL_MAX).forEach(p=>cols.push({t:p,ci}));
+  });
+  const pages=[];
+  for(let i=0;i<cols.length;i+=COLS_PER_PAGE){
+    const page=cols.slice(i,i+COLS_PER_PAGE);
+    while(page.length<COLS_PER_PAGE)page.push({gap:true});
+    pages.push(page);
+  }
+  const spreads=[];
+  for(let p=0;p<pages.length;p+=2)spreads.push({right:pages[p],left:pages[p+1]||null});
+  return spreads;
+}const D={spreads:[]};
+function rebuild(cap){
+  COL_MAX=cap;COL_MIN=Math.max(8,cap-3);
+  D.spreads=paginate(CHUNKS);
+}
+rebuild(21);
+/* 栏容量：竖排每字净进距 = 字号 24 × (1 + 字距 0.22em) ≈ 29.3px；
+   可用栏高 632px，并为「陛下/宗社」挪抬预留一格 → 每栏 20 字（合规范 20～22 字）。 */
+function calibrate(){
+  if(COL_MAX!==20)rebuild(20);
+  return true;
+}/* 规范式导出：memorialData（pageNo / columns / annotations） */
+window.memorialData=D.spreads.map((sp,i)=>({
+  spreadIndex:i+1,
+  rightPage:{pageNo:i*2+1,columns:sp.right.map(c=>c.t||"")},
+  leftPage:{pageNo:i*2+2,columns:(sp.left||Array.from({length:6},()=>({t:"",gap:true}))).map(c=>c.t||"")},
+  annotations:CHUNKS.reduce((o,c,ci)=>{o["chunk-"+(i+1)+"-"+ci]={original:c.t,translation:c.y,history:c.n};return o;},{})
+}));
+
+/* ==================== 状态 ==================== */
+const state={spread:0,anim:false,coverOpen:false,punct:true,zoom:1,lastChunk:null};
+try{const st=JSON.parse(localStorage.getItem("zhai-an-shu-v2")||"{}");
+  if(st.punct===false)state.punct=false;
+  if(st.zoom&&st.zoom>=0.9&&st.zoom<=1.1)state.zoom=st.zoom;}catch(e){}
+const persist=()=>{try{localStorage.setItem("zhai-an-shu-v2",JSON.stringify({punct:state.punct,zoom:state.zoom}))}catch(e){}};
+
+/* ==================== 渲染 ==================== */
+const pageR=$("#pageR"),pageL=$("#pageL"),leafR=$("#leafR"),leafL=$("#leafL");
+function colHTML(c,label){
+  if(!c||(!c.t&&c.gap))return `<div class="col${c&&c.carry?" carry":""}" data-carry="${c&&c.carry?label:""}"></div>`;
+  const raw=state.punct?c.t:plain(c.t);
+  return `<div class="col"><span class="chunk" data-c="${label}:${c.ci}" data-chunk="${c.ci}">${lift(esc(raw))}</span></div>`;
+}
+/* 兜底：任何一栏横向/纵向装不下，就整体微缩该页字号，杜绝栏内换行叠字 */
+/* 兜底：仅对装不下的「那一栏」微缩字号，整页其余栏保持原字号，故视觉上无差别 */
+function fitColumns(pageEl){
+  if(!pageEl)return;
+  pageEl.querySelectorAll(".col").forEach(col=>{
+    let fs=parseFloat(getComputedStyle(col).fontSize)||24,guard=0;
+    while((col.scrollWidth>col.clientWidth+1||col.scrollHeight>col.clientHeight+1)&&fs>17&&guard++<20){ fs-=0.5; col.style.fontSize=fs.toFixed(1)+"px"; }
+  });
+}function pageHTML(page,label){
+  return `<div class="crease"></div><div class="grid"></div>
+    <div class="content"><div class="cols">${page.map(c=>colHTML(c,label)).join("")}</div></div>
+    <div class="frame"></div>`;
+}
+const BLANK_PAGE=Array.from({length:COLS_PER_PAGE},()=>({t:"",gap:true}));
+function renderSpread(){
+  const sp=D.spreads[state.spread];
+  pageR.innerHTML=pageHTML(sp.right,"R");
+  pageL.innerHTML=pageHTML(sp.left||BLANK_PAGE,"L");
+  fitColumns(pageR);fitColumns(pageL);
+  updateControls();
+  /* 释读台随折同步：默认呈现本折起首之段 */
+  const first=(sp.right.find(c=>c.ci!==undefined)||(sp.left||[]).find(c=>c.ci!==undefined));
+  if(first&&first.ci!==state.lastChunk)renderSidebar(first.ci);
+}
+function updateControls(){
+  $("#spreadNum").innerHTML=innerWidth<1180
+    ? `第 <b>${cn(state.spread+1)}</b> ／ <b>${cn(D.spreads.length)}</b> 折`
+    : `第 <b>${cn(state.spread+1)}</b> 折 ／ 共 <b>${cn(D.spreads.length)}</b> 折`;
+  $("#btnPrev").disabled=state.spread<=0;
+  $("#btnNext").disabled=state.spread>=D.spreads.length-1;
+  const div=document.querySelectorAll(".divbtn");
+  div.forEach(b=>b.classList.toggle("active",+b.dataset.spread===state.spread));
+}
+
+/* ==================== 双叶合折翻页 ==================== */
+function setLeaf(el,frontPg,backPg,lblF,lblB){
+  el.innerHTML=`<div class="leafFace front" style="position:absolute;inset:0">${pageHTML(frontPg,lblF)}
+      <div class="leafShade shadeF" style="background:linear-gradient(to left,rgba(29,24,21,.86),rgba(29,24,21,.30) 55%,rgba(29,24,21,.10))"></div>
+    </div>
+    <div class="leafFace back" style="position:absolute;inset:0">${pageHTML(backPg,lblB)}
+      <div class="leafShade shadeB" style="background:linear-gradient(to right,rgba(29,24,21,.82),rgba(29,24,21,.26) 55%,rgba(29,24,21,.08))"></div>
+    </div>`;
+  fitColumns(el.querySelector(".front"));fitColumns(el.querySelector(".back"));
+}
+function flip(dir){
+  if(state.anim||!state.coverOpen)return;
+  const target=state.spread+dir;
+  if(target<0||target>=D.spreads.length)return;
+  state.anim=true;
+  const cur=D.spreads[state.spread],tgt=D.spreads[target];
+  const DUR=820,t0=performance.now();
+  const ease=p=>p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+  if(dir>0){ /* 右叶绕中缝 -180° 折向左，背面呈下一折左页 */
+    setLeaf(leafR,cur.right,tgt.left||BLANK_PAGE,"R","L");
+    pageR.innerHTML=pageHTML(tgt.right,"R");fitColumns(pageR);   /* 右半露出下一折右页 */
+    leafR.style.visibility="visible";leafR.style.transform="rotateY(0deg)";
+    const shF=leafR.querySelector(".shadeF"),shB=leafR.querySelector(".shadeB");
+    (function f(now){
+      const p=Math.min(1,(now-t0)/DUR),e=ease(p),a=-180*e,rad=a*Math.PI/180;
+      leafR.style.transform=`rotateY(${a}deg)`;
+      shF.style.opacity=((1-Math.cos(rad))/2*.78).toFixed(3);
+      shB.style.opacity=((1+Math.cos(rad))/2*.78).toFixed(3);
+      if(p<1)requestAnimationFrame(f);
+      else{pageL.innerHTML=pageHTML(tgt.left||BLANK_PAGE,"L");fitColumns(pageL);leafR.style.visibility="hidden";leafR.style.transform="rotateY(0deg)";finish(target);}
+    })(t0);
+  }else{ /* 向后折：左半叶（铰于中缝右缘）自 0° 折至 +180°，背面呈上一折右页 */
+    setLeaf(leafL,cur.left,tgt.right||BLANK_PAGE,"L","R");
+    pageL.innerHTML=pageHTML(tgt.left||BLANK_PAGE,"L");fitColumns(pageL);
+    leafL.style.visibility="visible";leafL.style.transform="rotateY(0deg)";
+    const shF=leafL.querySelector(".shadeF"),shB=leafL.querySelector(".shadeB");
+    (function f(now){
+      const p=Math.min(1,(now-t0)/DUR),e=ease(p),deg=180*e,rad=deg*Math.PI/180;
+      leafL.style.transform=`rotateY(${deg}deg)`;
+      shF.style.opacity=((1-Math.cos(rad))/2*.78).toFixed(3);
+      shB.style.opacity=((1+Math.cos(rad))/2*.78).toFixed(3);
+      if(p<1)requestAnimationFrame(f);
+      else{pageR.innerHTML=pageHTML(tgt.right,"R");fitColumns(pageR);leafL.style.visibility="hidden";leafL.style.transform="rotateY(180deg)";finish(target);}
+    })(t0);
+  }
+}function finish(target){state.spread=target;state.anim=false;renderSpread();}
+function jumpTo(spread){
+  if(state.anim||!state.coverOpen||spread===state.spread)return;
+  state.anim=true;const pages=$(".spreadPages");
+  pages.style.transition="opacity .3s ease";pages.style.opacity="0";
+  setTimeout(()=>{state.spread=spread;renderSpread();pages.style.opacity="1";
+    setTimeout(()=>{pages.style.transition="";state.anim=false;},320);},300);
+}
+
+/* ==================== 封面 → 展折仪式 ==================== */
+function openCover(){
+  if(state.coverOpen)return;
+  state.coverOpen=true;
+  fitStage();
+  renderSpread();
+  const sp=$("#spread");
+  sp.classList.add("opened");
+  $("#cover").classList.add("opened");
+  setTimeout(()=>{sp.classList.add("pagesOn");$("#sidebar").classList.add("on");$("#hudbar").classList.add("on");},420);
+  setTimeout(()=>{$("#cover").style.opacity="0";$("#cover").style.pointerEvents="none";},960);
+}
+$("#openBtn").addEventListener("click",e=>{e.stopPropagation();openCover();});
+$("#cover").addEventListener("click",openCover);
+
+/* ==================== 释读台联动 ==================== */
+const PRON={醮:"jiào",奭:"shì",瘼:"mò",瞀:"mào",赍:"jī",惓:"quán",刬:"chǎn",棐:"fěi"};
+const KEYWORD=/(嘉靖|斋醮|家家皆净|严嵩|陶仲文|比干|诏狱|不直|仙桃|天书|梁材)/g;
+function highlightOriginal(t){
+  let h=esc(t).replace(KEYWORD,'<span class="k" title="疏中要语">$1</span>');
+  for(const ch in PRON){h=h.replace(new RegExp(ch,"g"),`<span class="k" title="${PRON[ch]}">${ch}</span>`);}
+  return h;
+}
+function chunkCols(ci){
+  const res=[];
+  D.spreads.forEach((sp,si)=>{["right","left"].forEach(side=>{
+    const pg=sp[side];if(!pg)return;
+    pg.forEach((c,k)=>{if(c.ci===ci)res.push({spread:si,side,k:k+1});});
+  });});
+  return res;
+}
+let sbTimer=null;
+function renderSidebar(ci){
+  const c=CHUNKS[ci];if(!c)return;
+  if(state.lastChunk!==null)document.querySelectorAll(`.chunk[data-chunk="${state.lastChunk}"]`).forEach(e=>e.classList.remove("lit"));
+  document.querySelectorAll(`.chunk[data-chunk="${ci}"]`).forEach(e=>e.classList.add("lit"));
+  document.querySelectorAll(`.col.carry`).forEach(e=>e.classList.toggle("lit",e.dataset.carry&&document.querySelector(`.chunk[data-chunk="${ci}"]`)));
+  state.lastChunk=ci;
+  const sb=$("#sbBody");
+  clearTimeout(sbTimer);sb.classList.add("fading");
+  sbTimer=setTimeout(()=>{
+    $("#sbOrig").innerHTML=highlightOriginal(c.t);
+    $("#sbTrans").textContent=c.y;
+    $("#sbHist").textContent=c.n;
+    const cols=chunkCols(ci);
+    const first=cols[0],multi=cols.length>1;
+    $("#sbAt").textContent=`${cols.length} 栏 · 起于 第 ${cn(first.spread+1)} 折 ${first.side==="right"?"右叶":"左叶"} 第 ${cn(first.k)} 栏`;
+    let extra=document.getElementById("sbQuick");
+    if(!extra){extra=document.createElement("div");extra.className="sb-sec";extra.id="sbQuick";$("#sbBody").appendChild(extra);}
+    extra.innerHTML=`<h3>释读速览</h3><p>${multi?`此段横跨 ${cols.length} 栏：`:""}${cols.slice(0,8).map(x=>`<button class="qv" data-spread="${x.spread}">第${cn(x.spread+1)}折·${x.side==="right"?"右":"左"}叶·第${cn(x.k)}栏</button>`).join("")}</p>`;
+    extra.querySelectorAll(".qv").forEach(b=>b.addEventListener("click",()=>{
+      const s=+b.dataset.spread;
+      if(s!==state.spread)jumpTo(s);
+      document.querySelectorAll(`.chunk[data-chunk="${ci}"]`).forEach(e=>e.classList.add("lit"));
+    }));
+    sb.classList.remove("fading");
+  },220);
+}
+$("#stage").addEventListener("mouseover",e=>{
+  if(!state.coverOpen)return;
+  const t=e.target.closest(".chunk");if(!t)return;
+  renderSidebar(+t.dataset.chunk);
+});
+/* 悬停小贴示：定位于折子与释读台之间的通道，随所指栏上下对齐，不遮挡正文 */
+const tip=$("#tip");
+function placeTip(anchor){
+  const card=document.querySelector("#sidebar").getBoundingClientRect();
+  const bookR=Math.max(document.querySelector("#pageR").getBoundingClientRect().right,
+                       document.querySelector("#pageL").getBoundingClientRect().right);
+  const channel=card.left-bookR-24;                 /* 折子与释读台之间的净通道宽度 */
+  const w=Math.max(0,Math.min(300,channel));        /* 提示卡随通道收窄 */
+  if(w<170)return false;                            /* 通道过窄则不出提示，以免压字 */
+  tip.style.width=w+"px";
+  const tw=w,th=tip.offsetHeight||86,r=anchor.getBoundingClientRect();
+  let x=bookR+(channel-w)/2+12;                     /* 居于通道正中 */
+  x=Math.max(8,Math.min(x,card.left-tw-12));
+  let y=r.top+r.height/2-th/2;
+  y=Math.max(56,Math.min(y,innerHeight-th-96));
+  tip.style.left=x+"px";tip.style.top=y+"px";
+  return true;
+}
+$("#stage").addEventListener("mouseover",e=>{
+  if(!state.coverOpen)return;
+  if(innerWidth<1180){tip.style.opacity="0";tip.style.visibility="hidden";return;}
+  const t=e.target.closest(".chunk");
+  if(!t){tip.style.opacity="0";tip.style.visibility="hidden";return;}
+  const c=CHUNKS[+t.dataset.chunk];
+  tip.innerHTML=`<b style="color:#A32626">${esc(c.t.slice(0,14))}…</b><br><span style="font-size:12px;color:#8A7C68">详释已入右侧释读台</span>`;
+  tip.style.visibility="visible";tip.style.opacity="1";if(!placeTip(t)){tip.style.opacity="0";tip.style.visibility="hidden";}
+});
+$("#stage").addEventListener("mouseleave",()=>{tip.style.opacity="0";tip.style.visibility="hidden";});
+addEventListener("resize",()=>{tip.style.opacity="0";tip.style.visibility="hidden";});
+
+/* ==================== 控制器 / 键盘 / 缩放 ==================== */
+$("#btnPrev").addEventListener("click",()=>flip(-1));
+$("#btnNext").addEventListener("click",()=>flip(1));
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft"){e.preventDefault();flip(1);}
+  else if(e.key==="ArrowRight"){e.preventDefault();flip(-1);}
+  else if(e.key==="Enter"&&!state.coverOpen)openCover();
+});
+$("#btnPunct").addEventListener("click",()=>{
+  state.punct=!state.punct;$("#btnPunct").textContent=state.punct?"句读":"白文";
+  $("#btnPunct").classList.toggle("active",state.punct);renderSpread();persist();
+});
+document.querySelectorAll("[data-zoom]").forEach(b=>b.addEventListener("click",()=>{
+  state.zoom=+b.dataset.zoom;
+  document.querySelectorAll("[data-zoom]").forEach(x=>x.classList.toggle("active",x===b));
+  fitStage();persist();
+}));
+function fitStage(){
+  const st=$("#stage"),sp=$("#spread"),sb=$("#sidebar");
+  const w=innerWidth,h=st.clientHeight;
+  let fit=Math.min((w-150)/600,(h-48)/680,1.25)*state.zoom;
+  sp.style.setProperty("--fit",fit.toFixed(3));
+  if(state.coverOpen&&w>=1180){
+    /* 折子与释读台作为一个整体居中，中间只留窄通道 */
+    const bookW=600*fit,cardW=sb.getBoundingClientRect().width||400;
+    const gap=w>1520?56:40;
+    let left=(w-(bookW+gap+cardW))/2; if(left<24)left=24;
+    let cardLeft=left+bookW+gap;
+    if(cardLeft+cardW>w-24)cardLeft=w-24-cardW;
+    sp.style.setProperty("--shift",(-(gap+cardW)/2).toFixed(1)+"px");
+    sb.style.left=cardLeft+"px";
+  }else if(state.coverOpen){
+    sp.style.setProperty("--shift","-150px"); sb.style.left="";
+  }else{
+    sp.style.setProperty("--shift",(-150*fit).toFixed(1)+"px"); sb.style.left="";
+  }
+}
+addEventListener("resize",()=>{fitStage();updateControls();});
+
+/* ==================== 初始化与自检 ==================== */
+const qs=new URLSearchParams(location.search);
+function init(){
+  $("#btnPunct").textContent=state.punct?"句读":"白文";
+  $("#btnPunct").classList.toggle("active",state.punct);
+  document.querySelectorAll("[data-zoom]").forEach(x=>x.classList.toggle("active",+x.dataset.zoom===state.zoom));
+  fitStage();renderSpread();calibrate();renderSpread();
+  if(qs.get("open")!=null||qs.get("p")!=null||qs.get("selftest")!=null){
+    openCover();
+    const p=parseInt(qs.get("p")||"1",10)-1;
+    if(p>0&&p<D.spreads.length){state.spread=p;renderSpread();}
+  }
+  if(qs.get("plain")==="1")state.punct=false;
+  if(qs.get("ap-probe")){
+    setTimeout(()=>{
+      const col=document.querySelector("#pageR .col .chunk");
+      const c=document.querySelector("#pageR .col");
+      const cs=getComputedStyle(c);
+      const o={cap:COL_MAX,fontSize:cs.fontSize,lineHeight:cs.lineHeight,letterSpacing:cs.letterSpacing,
+        charAdvance:(()=>{const r=document.createElement("span");r.className="chunk";r.textContent="國";const s=document.createElement("span");s.className="chunk";s.textContent="國國國國國國國國國國";
+          const host=document.createElement("div");host.className="content";host.style.cssText="position:absolute;left:-9999px;width:41px";host.innerHTML="<div class=\"cols\"><div class=\"col\"></div></div>";
+          const cc=host.querySelector(".col");cc.appendChild(s);c.parentElement.appendChild(host);
+          const h=s.getBoundingClientRect().height;host.remove();return (h/10).toFixed(2);})(),
+        colHeight:c.clientHeight,colWidth:c.clientWidth,minFont:(()=>{let m=99;document.querySelectorAll(".pagePaper .col").forEach(x=>{m=Math.min(m,parseFloat(getComputedStyle(x).fontSize))});return m;})()};
+      const pre=document.createElement("pre");pre.id="ap-results";pre.textContent=JSON.stringify(o);document.body.appendChild(pre);
+    },1400);
+  }
+  if(qs.get("rects")){
+    setTimeout(()=>{
+      const sp=document.querySelector("#spread"),sb=document.querySelector("#sidebar");
+      const g=id=>{const r=document.getElementById(id).getBoundingClientRect();return{l:Math.round(r.left),r:Math.round(r.right)};};
+      const o={vw:innerWidth,vh:innerHeight,fit:getComputedStyle(sp).getPropertyValue("--fit"),
+        shift:getComputedStyle(sp).getPropertyValue("--shift"),sbLeft:sb.style.left||"(none)",
+        pageR:g("pageR"),pageL:g("pageL"),card:g("sidebar"),spread:g("spread")};
+      const pre=document.createElement("pre");pre.id="rect-results";pre.textContent=JSON.stringify(o);document.body.appendChild(pre);
+    },1200);
+  }
+  if(qs.get("hover"))renderSidebar(parseInt(qs.get("hover"),10));
+  setTimeout(()=>{if(calibrate())renderSpread();fitStage();},900);
+}
+window.rebuildData=()=>D;
+if(qs.get("selftest")){
+  Promise.race([document.fonts?document.fonts.ready:Promise.resolve(),new Promise(r=>setTimeout(r,4000))]).then(()=>setTimeout(()=>{
+    calibrate();renderSpread();fitStage();
+    const report={cap:COL_MAX,spreads:D.spreads.length,columns:0,overflow:[],missing:[],fonts:[]};
+    const rebuilt={};
+    D.spreads.forEach(sp=>["right","left"].forEach(side=>{
+      const pg=sp[side];if(!pg)return;
+      pg.forEach(c=>{ if(c.t)report.columns++; if(c.ci!==undefined)rebuilt[c.ci]=(rebuilt[c.ci]||"")+c.t; });
+    }));
+    CHUNKS.forEach((c,ci)=>{ if(plain(c.t)!==plain(rebuilt[ci]||""))report.missing.push(ci+1); });
+    for(let i=0;i<D.spreads.length;i++){
+      const sp=D.spreads[i];
+      pageR.innerHTML=pageHTML(sp.right,"R");pageL.innerHTML=pageHTML(sp.left||BLANK_PAGE,"L");
+      fitColumns(pageR);fitColumns(pageL);
+      document.querySelectorAll(".pagePaper .col").forEach(c=>report.fonts.push({sp:i+1,fs:parseFloat(getComputedStyle(c).fontSize),txt:(c.textContent||"").slice(0,6),sw:c.scrollWidth,cw:c.clientWidth,sh:c.scrollHeight,ch:c.clientHeight}));
+      document.querySelectorAll(".pagePaper .chunk").forEach(el=>{
+        const col=el.closest(".col");
+        if(col&&(col.scrollHeight>col.clientHeight+1||col.scrollWidth>col.clientWidth+1))
+          report.overflow.push({spread:i+1,len:el.textContent.length,sh:col.scrollHeight,ch:col.clientHeight,sw:col.scrollWidth,cw:col.clientWidth,fs:getComputedStyle(col).fontSize,txt:(col.textContent||"").slice(0,10)});
+      });
+    }
+    report.small=report.fonts.filter(f=>f.fs<22);report.fonts=undefined;
+    renderSpread();
+    const pre=document.createElement("pre");pre.id="test-results";pre.textContent=JSON.stringify(report);
+    document.body.appendChild(pre);document.title="SELFTEST_DONE";
+  },300));
+}
+init();
+</script>
 </body>
 </html>
