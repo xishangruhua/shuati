@@ -1,53 +1,657 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>小游戏</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#ffffff">
+<title>2048 · 毛笔自动</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    height: 100%; height: 100dvh;
-    background: linear-gradient(160deg, #dcefe2 0%, #e6f1e9 100%);
-    background-attachment: fixed;
-    color: #1f2a24;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-  .container {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 100vh; min-height: 100dvh; padding: 40px 24px;
-  }
-  .back {
-    position: fixed; top: 14px; left: 16px; z-index: 10;
-    background: none; border: none; color: #8a958e; font-size: 0.95rem;
-    cursor: pointer; padding: 6px 10px; text-decoration: none; font-family: inherit;
-  }
-  .back:hover { color: #2f9e6f; }
-  .line1 {
-    font-size: 1.3rem; color: #5a6a5f; margin-bottom: 20px;
-    text-align: center; letter-spacing: 0.03em;
-  }
-  .line2 {
-    font-size: 2rem; font-weight: 700; color: #2f9e6f;
-    text-align: center; letter-spacing: 0.05em;
-  }
-  .btn {
-    margin-top: 48px; padding: 12px 40px; font-size: 1rem; font-weight: 600;
-    border: 1px solid rgba(60,90,70,0.1); border-radius: 16px;
-    background: #fff; cursor: pointer; color: #2a3530;
-    box-shadow: 0 1px 3px rgba(30,60,40,0.06);
-    font-family: inherit; text-decoration: none; display: inline-block;
-  }
-  .btn:hover { color: #2f9e6f; }
+:root{
+  --bg:#ffffff;
+  --ink:#1b1b1b;
+  --muted:#9a9a9a;
+  --faint:#c2c2c2;
+  --board:#f4f4f5;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{
+  min-height:100dvh;
+  background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+  display:flex;align-items:center;justify-content:center;
+  padding:22px 16px;
+}
+.app{width:100%;max-width:400px}
+
+/* ---------- top ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;height:42px;margin-bottom:6px}
+.back{color:var(--muted);text-decoration:none;font-size:14px;padding:6px 2px;transition:color .16s}
+.back:hover{color:var(--ink)}
+.brush{
+  width:42px;height:42px;border:0;border-radius:12px;background:transparent;color:#8f8f8f;
+  display:grid;place-items:center;cursor:pointer;font:inherit;
+  transition:background .18s,color .18s,transform .18s;
+}
+.brush:hover{background:#f4f4f4;color:#1b1b1b}
+.brush:active{transform:scale(.94)}
+.brush svg{width:25px;height:25px;display:block;overflow:visible}
+.brush.on{background:var(--ink);color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.18)}
+.brush.on svg{animation:brushIn .35s ease}
+@keyframes brushIn{0%{transform:rotate(-18deg) scale(.86)}100%{transform:none}}
+
+/* ---------- head ---------- */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+h1{font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.scores{display:flex;gap:8px}
+.sbox{background:var(--board);border-radius:10px;padding:6px 12px;min-width:70px;text-align:center}
+.sbox .k{display:block;font-size:10px;letter-spacing:.16em;color:var(--muted)}
+.sbox .v{display:block;margin-top:2px;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ---------- board ---------- */
+.board{
+  position:relative;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+  aspect-ratio:1/1;padding:10px;
+  background:var(--board);border-radius:16px;
+  touch-action:none;user-select:none;
+}
+.cell{
+  border-radius:10px;background:#fff;
+  display:grid;place-items:center;
+  font-weight:700;font-variant-numeric:tabular-nums;
+  color:#cfcfcf;font-size:clamp(17px,5.6vw,29px);
+  transition:background .1s,color .1s;
+}
+.cell.d3{font-size:clamp(15px,4.6vw,23px)}
+.cell.d4{font-size:clamp(13px,3.9vw,19px)}
+.cell.v1{color:#cfcfcf}
+.cell.v2{background:#fafafa;color:#b6b6b6}
+.cell.v3{background:#f4f4f4;color:#969696}
+.cell.v4{background:#ededed;color:#757575}
+.cell.v5{background:#e5e5e5;color:#5a5a5a}
+.cell.v6{background:#dbdbdb;color:#424242}
+.cell.v7{background:#cdcdcd;color:#313131}
+.cell.v8{background:#bdbdbd;color:#282828}
+.cell.v9{background:#a9a9a9;color:#fff}
+.cell.v10{background:#8d8d8d;color:#fff}
+.cell.v11{background:#1b1b1b;color:#fff}
+.cell.v12,.cell.v13,.cell.v14,.cell.v15{background:#000;color:#fff;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.22)}
+.board.fast .cell{transition:none}
+.board.fast .cell.new,.board.fast .cell.merge{animation:none}
+.cell.new{animation:popNew .16s ease-out}
+.cell.merge{animation:popMerge .16s ease-out}
+@keyframes popNew{from{transform:scale(.5);opacity:.25}to{transform:none;opacity:1}}
+@keyframes popMerge{0%{transform:scale(1)}45%{transform:scale(1.14)}100%{transform:none}}
+
+/* ---------- speed panel ---------- */
+.panel{display:none;margin-top:14px}
+.panel.show{display:block;animation:panelIn .28s ease both}
+@keyframes panelIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.panel .row{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--muted)}
+.panel .row .val{font-size:15px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.panel .ticks{display:flex;justify-content:space-between;font-size:10px;color:var(--faint);margin-top:-2px}
+
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;cursor:grab;
+  --fill:0%;
+}
+input[type=range]:active{cursor:grabbing}
+input[type=range]::-webkit-slider-runnable-track{
+  height:4px;border-radius:2px;
+  background:linear-gradient(to right,#1b1b1b 0 var(--fill),#e8e8e8 var(--fill) 100%);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;
+  border:2px solid #1b1b1b;margin-top:-7px;box-shadow:0 1px 4px rgba(0,0,0,.18);
+}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:#e8e8e8}
+input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:#1b1b1b}
+input[type=range]::-moz-range-thumb{
+  width:14px;height:14px;border-radius:50%;background:#fff;border:2px solid #1b1b1b;
+  box-shadow:0 1px 4px rgba(0,0,0,.18);
+}
+
+/* ---------- foot ---------- */
+.foot{display:flex;align-items:center;justify-content:space-between;margin-top:14px;font-size:12px;color:var(--faint)}
+.reset{background:none;border:0;color:var(--faint);font:inherit;font-size:12px;cursor:pointer;padding:4px 2px;transition:color .16s}
+.reset:hover{color:var(--ink)}
+
+/* ---------- overlay ---------- */
+.overlay{
+  position:fixed;inset:0;display:grid;place-items:center;padding:24px;
+  background:rgba(255,255,255,.86);-webkit-backdrop-filter:blur(5px);backdrop-filter:blur(5px);
+  opacity:0;pointer-events:none;transition:opacity .26s ease;z-index:9;
+}
+.overlay.show{opacity:1;pointer-events:auto}
+.overlay .card{text-align:center;transform:translateY(6px);transition:transform .26s ease}
+.overlay.show .card{transform:none}
+.overlay h2{font-size:25px;font-weight:800;letter-spacing:.01em;margin-bottom:8px}
+.overlay p{color:var(--muted);font-size:14px;margin-bottom:20px}
+.overlay p b{color:var(--ink);font-variant-numeric:tabular-nums}
+.overlay button{
+  background:var(--ink);color:#fff;border:0;border-radius:12px;padding:11px 28px;
+  font:inherit;font-weight:600;cursor:pointer;transition:transform .16s,opacity .16s;
+}
+.overlay button:hover{opacity:.88}
+.overlay button:active{transform:scale(.96)}
+
+@media (max-width:360px){
+  h1{font-size:32px}
+  .board{gap:8px;padding:8px}
+  .sbox{min-width:60px;padding:5px 9px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+}
+
 </style>
 </head>
 <body>
-<a class="back" href="../index.html">← 返回</a>
-<div class="container">
-  <div class="line1">想啥呢，考完试会上架</div>
-  <div class="line2">加油加油！</div>
-  <a class="btn" href="../index.html">← 返回</a>
+<main class="app">
+  <div class="top">
+    <a class="back" href="../index.html">← 返回</a>
+    <button class="brush" id="brush" type="button" aria-label="毛笔：自动接管游戏" aria-pressed="false" title="毛笔 · 自动接管">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M20.8 2.9 L15.4 8.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M15.9 7.8 L14 9.7" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/>
+        <path d="M11.6 8.6 C9.79 13.34 6.09 17.64 3.6 20.2 C7.24 18.85 12.5 14.43 14.8 10.8 Z" fill="currentColor"/>
+      </svg>
+    </button>
+  </div>
+  <div class="head">
+    <h1>2048</h1>
+    <div class="scores">
+      <div class="sbox"><span class="k">得分</span><span class="v" id="score">0</span></div>
+      <div class="sbox"><span class="k">最高</span><span class="v" id="best">0</span></div>
+    </div>
+  </div>
+  <div class="board" id="board"></div>
+
+  <div class="panel" id="panel">
+    <div class="row"><span>自动速度</span><span class="val" id="speedVal">1×</span></div>
+    <input id="range" type="range" min="0" max="1000" value="0" aria-label="自动速度">
+    <div class="ticks"><span>1×</span><span>128×</span></div>
+  </div>
+
+  <div class="foot">
+    <span class="hint">方向键 / WASD / 滑动</span>
+    <button class="reset" id="reset" type="button">新开一局</button>
+  </div>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="card">
+    <h2>游戏结束</h2>
+    <p>本局得分 <b id="ovScore">0</b> · 最大方块 <b id="ovTile">—</b></p>
+    <button id="ovBtn" type="button">再来一局</button>
+  </div>
 </div>
+
+<script>
+/* 2048 engine + expectimax AI — dual (Node / browser) */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.G2048 = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  // ---- board: Uint16Array(4), each row packs 4 nibbles (exponents, 0=empty) ----
+  function createEmpty() { return new Uint16Array(4); }
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function cell(b, r, c) { return (b[r] >>> (c * 4)) & 15; }
+  function setCell(b, r, c, e) {
+    const s = c * 4;
+    b[r] = (b[r] & ~(15 << s)) | ((e & 15) << s);
+  }
+  function cells(b) { // row-major exponents
+    const a = new Array(16);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) a[r * 4 + c] = cell(b, r, c);
+    return a;
+  }
+  function fromCells(a) { const b = createEmpty(); for (let i = 0; i < 16; i++) setCell(b, (i / 4) | 0, i % 4, a[i]); return b; }
+  function copy(b) { return new Uint16Array(b); }
+
+  function randomTile(b, rand) {
+    const free = [];
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (cell(b, r, c) === 0) free.push(r * 4 + c);
+    if (!free.length) return false;
+    const i = free[(rand() * free.length) | 0];
+    setCell(b, (i / 4) | 0, i % 4, rand() < 0.9 ? 1 : 2);
+    return true;
+  }
+
+  // ---- precomputed row tables ----
+  const SIZE = 1 << 16;
+  const ROW_LEFT = new Uint16Array(SIZE);
+  const ROW_RIGHT = new Uint16Array(SIZE);
+  const ROW_SCORE = new Uint16Array(SIZE);
+  const ROW_SMOOTH = new Float32Array(SIZE);
+  const ROW_MONO = new Float32Array(SIZE);
+  const ROW_EMPTY = new Uint8Array(SIZE);
+  const ROW_MAX = new Uint8Array(SIZE);
+
+  function unpack(row, out) {
+    out[0] = row & 15; out[1] = (row >>> 4) & 15; out[2] = (row >>> 8) & 15; out[3] = (row >>> 12) & 15;
+  }
+  function pack(v) { return v[0] | (v[1] << 4) | (v[2] << 8) | (v[3] << 12); }
+
+  (function buildTables() {
+    const inp = [0, 0, 0, 0], res = [0, 0, 0, 0];
+    for (let row = 0; row < SIZE; row++) {
+      // left
+      unpack(row, inp);
+      let w = 0, merged = false, gained = 0;
+      for (let i = 0; i < 4; i++) {
+        const v = inp[i];
+        if (v === 0) continue;
+        if (w > 0 && res[w - 1] === v && !merged) { res[w - 1] = v + 1; gained += 1 << (v + 1); merged = true; }
+        else { res[w++] = v; merged = false; }
+      }
+      for (let i = w; i < 4; i++) res[i] = 0;
+      ROW_LEFT[row] = pack(res);
+      ROW_SCORE[row] = gained > 65535 ? 65535 : gained;
+      // right
+      const r0 = inp[3], r1 = inp[2], r2 = inp[1], r3 = inp[0];
+      const ri = [r0, r1, r2, r3];
+      let w2 = 0, merged2 = false;
+      for (let i = 0; i < 4; i++) {
+        const v = ri[i];
+        if (v === 0) continue;
+        if (w2 > 0 && res[w2 - 1] === v && !merged2) { res[w2 - 1] = v + 1; merged2 = true; }
+        else { res[w2++] = v; merged2 = false; }
+      }
+      for (let i = w2; i < 4; i++) res[i] = 0;
+      ROW_RIGHT[row] = pack([res[3], res[2], res[1], res[0]]);
+      // heuristics
+      const e0 = inp[0], e1 = inp[1], e2 = inp[2], e3 = inp[3];
+      let sm = 0;
+      if (e0 && e1) sm -= Math.abs(e0 - e1);
+      if (e1 && e2) sm -= Math.abs(e1 - e2);
+      if (e2 && e3) sm -= Math.abs(e2 - e3);
+      let inc = 0, dec = 0;
+      if (e0 > e1) dec += e1 - e0; else inc += e0 - e1;
+      if (e1 > e2) dec += e2 - e1; else inc += e1 - e2;
+      if (e2 > e3) dec += e3 - e2; else inc += e2 - e3;
+      ROW_SMOOTH[row] = sm;
+      ROW_MONO[row] = inc > dec ? inc : dec;
+      let emp = 0, mx = 0;
+      if (e0 === 0) emp++; else if (e0 > mx) mx = e0;
+      if (e1 === 0) emp++; else if (e1 > mx) mx = e1;
+      if (e2 === 0) emp++; else if (e2 > mx) mx = e2;
+      if (e3 === 0) emp++; else if (e3 > mx) mx = e3;
+      ROW_EMPTY[row] = emp;
+      ROW_MAX[row] = mx;
+    }
+  })();
+
+  // ---- moves ----
+  const TMP = new Uint16Array(4);
+  function transposeInto(src, dst) {
+    const r0 = src[0], r1 = src[1], r2 = src[2], r3 = src[3];
+    dst[0] = (r0 & 15) | ((r1 & 15) << 4) | ((r2 & 15) << 8) | ((r3 & 15) << 12);
+    dst[1] = ((r0 >>> 4) & 15) | (((r1 >>> 4) & 15) << 4) | (((r2 >>> 4) & 15) << 8) | (((r3 >>> 4) & 15) << 12);
+    dst[2] = ((r0 >>> 8) & 15) | (((r1 >>> 8) & 15) << 4) | (((r2 >>> 8) & 15) << 8) | (((r3 >>> 8) & 15) << 12);
+    dst[3] = ((r0 >>> 12) & 15) | (((r1 >>> 12) & 15) << 4) | (((r2 >>> 12) & 15) << 8) | (((r3 >>> 12) & 15) << 12);
+  }
+
+  // dir: 0=left 1=up 2=right 3=down. returns gained, or -1 if nothing moved.
+  function moveInto(b, dir, out) {
+    let changed = false, gained = 0;
+    if (dir === 0) {
+      for (let r = 0; r < 4; r++) { const o = b[r]; const n = ROW_LEFT[o]; if (n !== o) changed = true; out[r] = n; gained += ROW_SCORE[o]; }
+    } else if (dir === 2) {
+      for (let r = 0; r < 4; r++) { const o = b[r]; const n = ROW_RIGHT[o]; if (n !== o) changed = true; out[r] = n; gained += ROW_SCORE[o]; }
+    } else {
+      transposeInto(b, TMP);
+      if (dir === 1) { for (let r = 0; r < 4; r++) { const o = TMP[r]; const n = ROW_LEFT[o]; if (n !== o) changed = true; TMP[r] = n; gained += ROW_SCORE[o]; } }
+      else { for (let r = 0; r < 4; r++) { const o = TMP[r]; const n = ROW_RIGHT[o]; if (n !== o) changed = true; TMP[r] = n; gained += ROW_SCORE[o]; } }
+      transposeInto(TMP, out);
+    }
+    return changed ? gained : -1;
+  }
+
+  function hasMoves(b) {
+    if (ROW_EMPTY[b[0]] + ROW_EMPTY[b[1]] + ROW_EMPTY[b[2]] + ROW_EMPTY[b[3]] > 0) return true;
+    const o = new Uint16Array(4);
+    for (let d = 0; d < 4; d++) if (moveInto(b, d, o) >= 0) return true;
+    return false;
+  }
+
+  // ---- evaluation ----
+  let W_EMPTY = 2.7, W_SMOOTH = 0.1, W_MONO = 1.0, W_MAX = 1.0, W_CORNER = 0.6;
+  function weights(w) { if (w) { W_EMPTY = w.empty; W_SMOOTH = w.smooth; W_MONO = w.mono; W_MAX = w.max; W_CORNER = w.corner; } return { empty: W_EMPTY, smooth: W_SMOOTH, mono: W_MONO, max: W_MAX, corner: W_CORNER }; }
+
+  function evaluate(b) {
+    const r0 = b[0], r1 = b[1], r2 = b[2], r3 = b[3];
+    let smooth = ROW_SMOOTH[r0] + ROW_SMOOTH[r1] + ROW_SMOOTH[r2] + ROW_SMOOTH[r3];
+    let mono = ROW_MONO[r0] + ROW_MONO[r1] + ROW_MONO[r2] + ROW_MONO[r3];
+    let empty = ROW_EMPTY[r0] + ROW_EMPTY[r1] + ROW_EMPTY[r2] + ROW_EMPTY[r3];
+    let mx = ROW_MAX[r0]; if (ROW_MAX[r1] > mx) mx = ROW_MAX[r1]; if (ROW_MAX[r2] > mx) mx = ROW_MAX[r2]; if (ROW_MAX[r3] > mx) mx = ROW_MAX[r3];
+    transposeInto(b, TMP);
+    const t0 = TMP[0], t1 = TMP[1], t2 = TMP[2], t3 = TMP[3];
+    smooth += ROW_SMOOTH[t0] + ROW_SMOOTH[t1] + ROW_SMOOTH[t2] + ROW_SMOOTH[t3];
+    mono += ROW_MONO[t0] + ROW_MONO[t1] + ROW_MONO[t2] + ROW_MONO[t3];
+    let corner = 0;
+    if ((r0 & 15) === mx) corner = mx;
+    else if ((r0 >>> 12) === mx) corner = mx;
+    else if ((r3 & 15) === mx) corner = mx;
+    else if ((r3 >>> 12) === mx) corner = mx;
+    return W_EMPTY * empty + W_SMOOTH * smooth + W_MONO * mono + W_MAX * mx + W_CORNER * corner;
+  }
+
+  // ---- expectimax ----
+  const SCRATCH = [];
+  for (let i = 0; i < 40; i++) SCRATCH.push(new Uint16Array(4));
+  let DEPTH = 3;
+
+  function maxNode(b, depth, ply) {
+    if (depth <= 0) return evaluate(b);
+    const out = SCRATCH[ply];
+    let best = -Infinity;
+    for (let d = 0; d < 4; d++) {
+      const g = moveInto(b, d, out);
+      if (g < 0) continue;
+      const v = g + chanceNode(out, depth - 1, ply + 1);
+      if (v > best) best = v;
+    }
+    return best === -Infinity ? -1e9 : best;
+  }
+
+  function chanceNode(b, depth, ply) {
+    if (depth <= 0) return evaluate(b);
+    let sum = 0, cnt = 0;
+    for (let r = 0; r < 4; r++) {
+      let row = b[r];
+      for (let s = 0; s < 16; s += 4) {
+        if (((row >>> s) & 15) !== 0) continue;
+        b[r] = row | (1 << s);
+        sum += 0.9 * maxNode(b, depth, ply + 1);
+        b[r] = row | (2 << s);
+        sum += 0.1 * maxNode(b, depth, ply + 1);
+        b[r] = row;
+        cnt++;
+      }
+    }
+    if (cnt === 0) return maxNode(b, depth, ply + 1);
+    return sum / cnt;
+  }
+
+  function bestMove(b, depth) {
+    if (depth === undefined) depth = DEPTH;
+    let bestDir = -1, bestVal = -Infinity;
+    const out = SCRATCH[0];
+    for (let d = 0; d < 4; d++) {
+      const g = moveInto(b, d, out);
+      if (g < 0) continue;
+      const v = g + chanceNode(out, depth - 1, 1);
+      if (v > bestVal) { bestVal = v; bestDir = d; }
+    }
+    return bestDir;
+  }
+
+  function setDepth(d) { DEPTH = d; }
+  function getDepth() { return DEPTH; }
+
+  return {
+    createEmpty, copy, cell, setCell, cells, fromCells, randomTile, mulberry32,
+    moveInto, hasMoves, evaluate, bestMove, setDepth, getDepth, weights,
+    DIR: { LEFT: 0, UP: 1, RIGHT: 2, DOWN: 3 }
+  };
+});
+
+</script>
+<script>
+(function () {
+  'use strict';
+  var G = window.G2048;
+  if (!G) return;
+
+  var BASE_MPS = 4;          // 1× = 4 步/秒 → 128× = 512 步/秒
+  var MAX_SPEED = 128;
+  var BEST_KEY = 'g2048-brush-best';
+  var SPEED_KEY = 'g2048-brush-speed';
+  var LN_MAX = Math.log(MAX_SPEED);
+
+  var board, score = 0, best = 0, auto = false, speed = 1, over = false;
+  var acc = 0, lastT = 0, depth = 3, avgMs = 0.8, restartTimer = 0;
+  var OUT = new Uint16Array(4);
+  var prev = new Array(16);
+  for (var i = 0; i < 16; i++) prev[i] = 0;
+
+  var cellEls = [];
+  var boardEl, scoreEl, bestEl, brushEl, panelEl, rangeEl, valEl, overlayEl, ovScoreEl, ovTileEl, resetEl, ovBtn;
+
+  G.weights({ empty: 3.5, smooth: 0.1, mono: 1.0, max: 1.0, corner: 1.0 });
+
+  function $(id) { return document.getElementById(id); }
+
+  function sliderToSpeed(v) {
+    var s = Math.round(Math.exp(LN_MAX * (v / 1000)));
+    return s < 1 ? 1 : (s > MAX_SPEED ? MAX_SPEED : s);
+  }
+  function speedToSlider(s) {
+    return Math.round(1000 * Math.log(s) / LN_MAX);
+  }
+
+  function buildBoard() {
+    boardEl = $('board');
+    for (var i = 0; i < 16; i++) {
+      var d = document.createElement('div');
+      d.className = 'cell';
+      boardEl.appendChild(d);
+      cellEls.push(d);
+    }
+  }
+
+  function maxTileExp() {
+    var m = 0;
+    for (var r = 0; r < 4; r++) for (var c = 0; c < 4; c++) { var e = G.cell(board, r, c); if (e > m) m = e; }
+    return m;
+  }
+
+  function render(animate) {
+    var fast = speed > 12;
+    boardEl.classList.toggle('fast', fast);
+    for (var i = 0; i < 16; i++) {
+      var r = (i / 4) | 0, c = i % 4;
+      var e = G.cell(board, r, c);
+      var el = cellEls[i];
+      var cls = 'cell';
+      if (e) {
+        cls += ' v' + (e > 15 ? 15 : e);
+        var v = Math.pow(2, e);
+        var digits = v >= 10000 ? 5 : (v >= 1000 ? 4 : (v >= 100 ? 3 : 2));
+        if (digits === 3) cls += ' d3';
+        else if (digits >= 4) cls += ' d4';
+      }
+      el.className = cls;
+      el.textContent = e ? String(Math.pow(2, e)) : '';
+      var p = prev[i];
+      if (animate && e > p) el.classList.add(p === 0 ? 'new' : 'merge');
+      prev[i] = e;
+    }
+  }
+
+  function paintSpeed() {
+    valEl.textContent = speed + '\u00d7';
+    rangeEl.style.setProperty('--fill', (Math.log(speed) / LN_MAX * 100).toFixed(2) + '%');
+  }
+
+  function addScore(g) {
+    score += g;
+    if (score > best) {
+      best = score;
+      bestEl.textContent = String(best);
+      try { localStorage.setItem(BEST_KEY, String(best)); } catch (err) {}
+    }
+    scoreEl.textContent = String(score);
+  }
+
+  function applyMove(dir) {
+    var g = G.moveInto(board, dir, OUT);
+    if (g < 0) return false;
+    board.set(OUT);
+    addScore(g);
+    G.randomTile(board, Math.random);
+    return true;
+  }
+
+  function showOverlay() {
+    var e = maxTileExp();
+    ovScoreEl.textContent = String(score);
+    ovTileEl.textContent = e ? String(Math.pow(2, e)) : '\u2014';
+    overlayEl.classList.add('show');
+    if (auto) {
+      clearTimeout(restartTimer);
+      restartTimer = setTimeout(function () { if (auto) newGame(); }, 1100);
+    }
+  }
+  function hideOverlay() { overlayEl.classList.remove('show'); }
+
+  function checkOver() {
+    if (over) return true;
+    if (G.hasMoves(board)) return false;
+    over = true;
+    showOverlay();
+    return true;
+  }
+
+  function newGame() {
+    clearTimeout(restartTimer);
+    board = G.createEmpty();
+    G.randomTile(board, Math.random);
+    G.randomTile(board, Math.random);
+    score = 0; over = false; acc = 0;
+    for (var i = 0; i < 16; i++) prev[i] = 0;
+    scoreEl.textContent = '0';
+    hideOverlay();
+    render(false);
+  }
+
+  function manual(dir) {
+    if (auto || over) return;
+    if (applyMove(dir)) { render(true); checkOver(); }
+  }
+
+  function setAuto(on) {
+    auto = on;
+    brushEl.classList.toggle('on', on);
+    brushEl.setAttribute('aria-pressed', on ? 'true' : 'false');
+    panelEl.classList.toggle('show', on);
+    acc = 0; lastT = 0;
+    clearTimeout(restartTimer);
+    if (on) {
+      if (over || !G.hasMoves(board)) newGame();
+      else hideOverlay();
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    }
+  }
+
+  function loop(now) {
+    requestAnimationFrame(loop);
+    if (!auto || over) { lastT = now; return; }
+    if (!lastT) lastT = now;
+    var dt = now - lastT;
+    lastT = now;
+    if (dt > 250) dt = 250;
+
+    var target = speed * BASE_MPS;              // 目标步/秒
+    acc += target * dt / 1000;
+    var cap = target / 30;
+    if (cap < 2) cap = 2;
+    if (acc > cap) acc = cap;
+
+    var t0 = performance.now();
+    var moved = 0;
+    while (acc >= 1 && !over) {
+      var t1 = performance.now();
+      var d = G.bestMove(board, depth);
+      var dm = performance.now() - t1;
+      avgMs = avgMs * 0.9 + dm * 0.1;
+      if (d < 0) { checkOver(); break; }
+      if (!applyMove(d)) { checkOver(); break; }
+      acc -= 1; moved++;
+      if (performance.now() - t0 > 11) break;   // 每帧最多占用 ~11ms，保住 60fps
+    }
+
+    if (moved) { render(speed <= 12); checkOver(); }
+
+    // 调速器：只有跑得动就保持 3 层搜索，跑不动才降到 2 层，确保真能顶到目标倍速
+    depth = (avgMs * 1.3 < 1000 / target) ? 3 : 2;
+  }
+
+  function init() {
+    buildBoard();
+    scoreEl = $('score'); bestEl = $('best'); brushEl = $('brush');
+    panelEl = $('panel'); rangeEl = $('range'); valEl = $('speedVal');
+    overlayEl = $('overlay'); ovScoreEl = $('ovScore'); ovTileEl = $('ovTile');
+    resetEl = $('reset'); ovBtn = $('ovBtn');
+
+    try { best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0; } catch (err) {}
+    try {
+      var s = parseInt(localStorage.getItem(SPEED_KEY) || '1', 10);
+      if (s >= 1 && s <= MAX_SPEED) speed = s;
+    } catch (err) {}
+    bestEl.textContent = String(best);
+
+    rangeEl.min = '0'; rangeEl.max = '1000'; rangeEl.step = '1';
+    rangeEl.value = String(speedToSlider(speed));
+    paintSpeed();
+
+    brushEl.addEventListener('click', function () { setAuto(!auto); });
+    resetEl.addEventListener('click', function () { newGame(); });
+    ovBtn.addEventListener('click', function () { clearTimeout(restartTimer); newGame(); });
+    rangeEl.addEventListener('input', function () {
+      speed = sliderToSpeed(parseFloat(rangeEl.value) || 0);
+      paintSpeed();
+      try { localStorage.setItem(SPEED_KEY, String(speed)); } catch (err) {}
+    });
+
+    document.addEventListener('keydown', function (ev) {
+      if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+      var k = ev.key;
+      var d = k === 'ArrowLeft' || k === 'a' || k === 'A' ? 0
+        : k === 'ArrowUp' || k === 'w' || k === 'W' ? 1
+        : k === 'ArrowRight' || k === 'd' || k === 'D' ? 2
+        : k === 'ArrowDown' || k === 's' || k === 'S' ? 3 : -1;
+      if (d < 0) return;
+      ev.preventDefault();
+      manual(d);
+    });
+
+    var tx = 0, ty = 0, tracking = false;
+    boardEl.addEventListener('touchstart', function (ev) {
+      var t = ev.touches[0]; tx = t.clientX; ty = t.clientY; tracking = true;
+    }, { passive: true });
+    boardEl.addEventListener('touchend', function (ev) {
+      if (!tracking) return;
+      tracking = false;
+      var t = ev.changedTouches[0];
+      var dx = t.clientX - tx, dy = t.clientY - ty;
+      var ax = Math.abs(dx), ay = Math.abs(dy);
+      if (Math.max(ax, ay) < 24) return;
+      manual(ax > ay ? (dx > 0 ? 2 : 0) : (dy > 0 ? 3 : 1));
+    }, { passive: true });
+
+    newGame();
+    requestAnimationFrame(loop);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+
+</script>
 </body>
 </html>
