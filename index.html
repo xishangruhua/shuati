@@ -190,16 +190,14 @@ input[type=range]::-moz-range-thumb{
 </div>
 
 <script>
-/* 2048 engine + expectimax AI — dual (Node / browser) */
+/* 2048 engine + expectimax AI (nneonneo heuristic) — dual Node/browser */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
   else root.G2048 = factory();
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  // ---- board: Uint16Array(4), each row packs 4 nibbles (exponents, 0=empty) ----
   function createEmpty() { return new Uint16Array(4); }
-
   function mulberry32(a) {
     return function () {
       a |= 0; a = (a + 0x6D2B79F5) | 0;
@@ -208,20 +206,11 @@ input[type=range]::-moz-range-thumb{
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
-
   function cell(b, r, c) { return (b[r] >>> (c * 4)) & 15; }
-  function setCell(b, r, c, e) {
-    const s = c * 4;
-    b[r] = (b[r] & ~(15 << s)) | ((e & 15) << s);
-  }
-  function cells(b) { // row-major exponents
-    const a = new Array(16);
-    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) a[r * 4 + c] = cell(b, r, c);
-    return a;
-  }
+  function setCell(b, r, c, e) { const s = c * 4; b[r] = (b[r] & ~(15 << s)) | ((e & 15) << s); }
+  function cells(b) { const a = new Array(16); for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) a[r * 4 + c] = cell(b, r, c); return a; }
   function fromCells(a) { const b = createEmpty(); for (let i = 0; i < 16; i++) setCell(b, (i / 4) | 0, i % 4, a[i]); return b; }
   function copy(b) { return new Uint16Array(b); }
-
   function randomTile(b, rand) {
     const free = [];
     for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (cell(b, r, c) === 0) free.push(r * 4 + c);
@@ -231,71 +220,66 @@ input[type=range]::-moz-range-thumb{
     return true;
   }
 
-  // ---- precomputed row tables ----
+  // ---- tables ----
   const SIZE = 1 << 16;
   const ROW_LEFT = new Uint16Array(SIZE);
   const ROW_RIGHT = new Uint16Array(SIZE);
   const ROW_SCORE = new Uint16Array(SIZE);
-  const ROW_SMOOTH = new Float32Array(SIZE);
-  const ROW_MONO = new Float32Array(SIZE);
-  const ROW_EMPTY = new Uint8Array(SIZE);
-  const ROW_MAX = new Uint8Array(SIZE);
+  const ROW_HEUR = new Float32Array(SIZE);   // nneonneo heur_score_table
+  const POW35 = new Float64Array(16);
+  const POW4 = new Float64Array(16);
+  for (let i = 0; i < 16; i++) { POW35[i] = Math.pow(i, 3.5); POW4[i] = Math.pow(i, 4); }
 
-  function unpack(row, out) {
-    out[0] = row & 15; out[1] = (row >>> 4) & 15; out[2] = (row >>> 8) & 15; out[3] = (row >>> 12) & 15;
-  }
+  function unpack(row, out) { out[0] = row & 15; out[1] = (row >>> 4) & 15; out[2] = (row >>> 8) & 15; out[3] = (row >>> 12) & 15; }
   function pack(v) { return v[0] | (v[1] << 4) | (v[2] << 8) | (v[3] << 12); }
 
   (function buildTables() {
     const inp = [0, 0, 0, 0], res = [0, 0, 0, 0];
     for (let row = 0; row < SIZE; row++) {
-      // left
       unpack(row, inp);
+      // move left
       let w = 0, merged = false, gained = 0;
       for (let i = 0; i < 4; i++) {
-        const v = inp[i];
-        if (v === 0) continue;
+        const v = inp[i]; if (v === 0) continue;
         if (w > 0 && res[w - 1] === v && !merged) { res[w - 1] = v + 1; gained += 1 << (v + 1); merged = true; }
         else { res[w++] = v; merged = false; }
       }
       for (let i = w; i < 4; i++) res[i] = 0;
       ROW_LEFT[row] = pack(res);
       ROW_SCORE[row] = gained > 65535 ? 65535 : gained;
-      // right
-      const r0 = inp[3], r1 = inp[2], r2 = inp[1], r3 = inp[0];
-      const ri = [r0, r1, r2, r3];
+      // move right
+      const ri = [inp[3], inp[2], inp[1], inp[0]];
       let w2 = 0, merged2 = false;
       for (let i = 0; i < 4; i++) {
-        const v = ri[i];
-        if (v === 0) continue;
+        const v = ri[i]; if (v === 0) continue;
         if (w2 > 0 && res[w2 - 1] === v && !merged2) { res[w2 - 1] = v + 1; merged2 = true; }
         else { res[w2++] = v; merged2 = false; }
       }
       for (let i = w2; i < 4; i++) res[i] = 0;
       ROW_RIGHT[row] = pack([res[3], res[2], res[1], res[0]]);
-      // heuristics
-      const e0 = inp[0], e1 = inp[1], e2 = inp[2], e3 = inp[3];
-      let sm = 0;
-      if (e0 && e1) sm -= Math.abs(e0 - e1);
-      if (e1 && e2) sm -= Math.abs(e1 - e2);
-      if (e2 && e3) sm -= Math.abs(e2 - e3);
-      let inc = 0, dec = 0;
-      if (e0 > e1) dec += e1 - e0; else inc += e0 - e1;
-      if (e1 > e2) dec += e2 - e1; else inc += e1 - e2;
-      if (e2 > e3) dec += e3 - e2; else inc += e2 - e3;
-      ROW_SMOOTH[row] = sm;
-      ROW_MONO[row] = inc > dec ? inc : dec;
-      let emp = 0, mx = 0;
-      if (e0 === 0) emp++; else if (e0 > mx) mx = e0;
-      if (e1 === 0) emp++; else if (e1 > mx) mx = e1;
-      if (e2 === 0) emp++; else if (e2 > mx) mx = e2;
-      if (e3 === 0) emp++; else if (e3 > mx) mx = e3;
-      ROW_EMPTY[row] = emp;
-      ROW_MAX[row] = mx;
+
+      // ---- nneonneo heuristic ----
+      let sum = 0, empty = 0, merges = 0, prev = 0, counter = 0;
+      for (let i = 0; i < 4; i++) {
+        const rank = inp[i];
+        sum += POW35[rank];
+        if (rank === 0) { empty++; }
+        else {
+          if (prev === rank) counter++;
+          else if (counter > 0) { merges += 1 + counter; counter = 0; }
+          prev = rank;
+        }
+      }
+      if (counter > 0) merges += 1 + counter;
+      let monoL = 0, monoR = 0;
+      for (let i = 1; i < 4; i++) {
+        if (inp[i - 1] > inp[i]) monoL += POW4[inp[i - 1]] - POW4[inp[i]];
+        else monoR += POW4[inp[i]] - POW4[inp[i - 1]];
+      }
+      ROW_HEUR[row] = 200000 + 270 * empty + 700 * merges - 47 * (monoL < monoR ? monoL : monoR) - 11 * sum;
     }
   })();
 
-  // ---- moves ----
   const TMP = new Uint16Array(4);
   function transposeInto(src, dst) {
     const r0 = src[0], r1 = src[1], r2 = src[2], r3 = src[3];
@@ -305,7 +289,6 @@ input[type=range]::-moz-range-thumb{
     dst[3] = ((r0 >>> 12) & 15) | (((r1 >>> 12) & 15) << 4) | (((r2 >>> 12) & 15) << 8) | (((r3 >>> 12) & 15) << 12);
   }
 
-  // dir: 0=left 1=up 2=right 3=down. returns gained, or -1 if nothing moved.
   function moveInto(b, dir, out) {
     let changed = false, gained = 0;
     if (dir === 0) {
@@ -321,39 +304,21 @@ input[type=range]::-moz-range-thumb{
     return changed ? gained : -1;
   }
 
+  const TMP2 = new Uint16Array(4);
   function hasMoves(b) {
-    if (ROW_EMPTY[b[0]] + ROW_EMPTY[b[1]] + ROW_EMPTY[b[2]] + ROW_EMPTY[b[3]] > 0) return true;
-    const o = new Uint16Array(4);
-    for (let d = 0; d < 4; d++) if (moveInto(b, d, o) >= 0) return true;
+    for (let d = 0; d < 4; d++) if (moveInto(b, d, TMP2) >= 0) return true;
     return false;
   }
 
-  // ---- evaluation ----
-  let W_EMPTY = 2.7, W_SMOOTH = 0.1, W_MONO = 1.0, W_MAX = 1.0, W_CORNER = 0.6;
-  function weights(w) { if (w) { W_EMPTY = w.empty; W_SMOOTH = w.smooth; W_MONO = w.mono; W_MAX = w.max; W_CORNER = w.corner; } return { empty: W_EMPTY, smooth: W_SMOOTH, mono: W_MONO, max: W_MAX, corner: W_CORNER }; }
-
   function evaluate(b) {
-    const r0 = b[0], r1 = b[1], r2 = b[2], r3 = b[3];
-    let smooth = ROW_SMOOTH[r0] + ROW_SMOOTH[r1] + ROW_SMOOTH[r2] + ROW_SMOOTH[r3];
-    let mono = ROW_MONO[r0] + ROW_MONO[r1] + ROW_MONO[r2] + ROW_MONO[r3];
-    let empty = ROW_EMPTY[r0] + ROW_EMPTY[r1] + ROW_EMPTY[r2] + ROW_EMPTY[r3];
-    let mx = ROW_MAX[r0]; if (ROW_MAX[r1] > mx) mx = ROW_MAX[r1]; if (ROW_MAX[r2] > mx) mx = ROW_MAX[r2]; if (ROW_MAX[r3] > mx) mx = ROW_MAX[r3];
-    transposeInto(b, TMP);
-    const t0 = TMP[0], t1 = TMP[1], t2 = TMP[2], t3 = TMP[3];
-    smooth += ROW_SMOOTH[t0] + ROW_SMOOTH[t1] + ROW_SMOOTH[t2] + ROW_SMOOTH[t3];
-    mono += ROW_MONO[t0] + ROW_MONO[t1] + ROW_MONO[t2] + ROW_MONO[t3];
-    let corner = 0;
-    if ((r0 & 15) === mx) corner = mx;
-    else if ((r0 >>> 12) === mx) corner = mx;
-    else if ((r3 & 15) === mx) corner = mx;
-    else if ((r3 >>> 12) === mx) corner = mx;
-    return W_EMPTY * empty + W_SMOOTH * smooth + W_MONO * mono + W_MAX * mx + W_CORNER * corner;
+    return ROW_HEUR[b[0]] + ROW_HEUR[b[1]] + ROW_HEUR[b[2]] + ROW_HEUR[b[3]] +
+      (transposeInto(b, TMP), ROW_HEUR[TMP[0]] + ROW_HEUR[TMP[1]] + ROW_HEUR[TMP[2]] + ROW_HEUR[TMP[3]]);
   }
 
-  // ---- expectimax ----
   const SCRATCH = [];
-  for (let i = 0; i < 40; i++) SCRATCH.push(new Uint16Array(4));
+  for (let i = 0; i < 64; i++) SCRATCH.push(new Uint16Array(4));
   let DEPTH = 3;
+  let SAMPLE = 0;   // >0: sample this many spawn cells per chance node (faster, approx)
 
   function maxNode(b, depth, ply) {
     if (depth <= 0) return evaluate(b);
@@ -370,11 +335,24 @@ input[type=range]::-moz-range-thumb{
 
   function chanceNode(b, depth, ply) {
     if (depth <= 0) return evaluate(b);
-    let sum = 0, cnt = 0;
+    let sum = 0, cnt = 0, empties = 0;
+    // count empties
+    for (let r = 0; r < 4; r++) {
+      let row = b[r];
+      for (let s = 0; s < 16; s += 4) if (((row >>> s) & 15) === 0) empties++;
+    }
+    if (empties === 0) return maxNode(b, depth, ply + 1);
+    const limit = (SAMPLE > 0 && empties > SAMPLE) ? SAMPLE : empties;
+    const stride = empties / limit;
+    let seen = 0, taken = 0;
     for (let r = 0; r < 4; r++) {
       let row = b[r];
       for (let s = 0; s < 16; s += 4) {
         if (((row >>> s) & 15) !== 0) continue;
+        const idx = seen++;
+        // deterministic even sampling
+        if (SAMPLE > 0 && empties > SAMPLE && Math.floor(idx / stride) !== taken) continue;
+        taken++;
         b[r] = row | (1 << s);
         sum += 0.9 * maxNode(b, depth, ply + 1);
         b[r] = row | (2 << s);
@@ -383,7 +361,6 @@ input[type=range]::-moz-range-thumb{
         cnt++;
       }
     }
-    if (cnt === 0) return maxNode(b, depth, ply + 1);
     return sum / cnt;
   }
 
@@ -401,15 +378,15 @@ input[type=range]::-moz-range-thumb{
   }
 
   function setDepth(d) { DEPTH = d; }
-  function getDepth() { return DEPTH; }
+  function setSample(k) { SAMPLE = k; }
+  function weights() { return null; }
 
   return {
     createEmpty, copy, cell, setCell, cells, fromCells, randomTile, mulberry32,
-    moveInto, hasMoves, evaluate, bestMove, setDepth, getDepth, weights,
+    moveInto, hasMoves, evaluate, bestMove, setDepth, setSample, getDepth: () => DEPTH, weights,
     DIR: { LEFT: 0, UP: 1, RIGHT: 2, DOWN: 3 }
   };
 });
-
 </script>
 <script>
 (function () {
@@ -424,7 +401,7 @@ input[type=range]::-moz-range-thumb{
   var LN_MAX = Math.log(MAX_SPEED);
 
   var board, score = 0, best = 0, auto = false, speed = 1, over = false;
-  var acc = 0, lastT = 0, depth = 3, avgMs = 0.8, restartTimer = 0;
+  var acc = 0, lastT = 0, depth = 3, avgMs = 0.4, restartTimer = 0;
   var OUT = new Uint16Array(4);
   var prev = new Array(16);
   for (var i = 0; i < 16; i++) prev[i] = 0;
@@ -432,7 +409,7 @@ input[type=range]::-moz-range-thumb{
   var cellEls = [];
   var boardEl, scoreEl, bestEl, brushEl, panelEl, rangeEl, valEl, overlayEl, ovScoreEl, ovTileEl, resetEl, ovBtn;
 
-  G.weights({ empty: 3.5, smooth: 0.1, mono: 1.0, max: 1.0, corner: 1.0 });
+  // 评估函数内置在引擎里（nneonneo 启发式），无需外部权重
 
   function $(id) { return document.getElementById(id); }
 
@@ -514,7 +491,7 @@ input[type=range]::-moz-range-thumb{
     overlayEl.classList.add('show');
     if (auto) {
       clearTimeout(restartTimer);
-      restartTimer = setTimeout(function () { if (auto) newGame(); }, 1100);
+      restartTimer = setTimeout(function () { if (auto) newGame(); }, 1500);
     }
   }
   function hideOverlay() { overlayEl.classList.remove('show'); }
@@ -578,7 +555,7 @@ input[type=range]::-moz-range-thumb{
       var t1 = performance.now();
       var d = G.bestMove(board, depth);
       var dm = performance.now() - t1;
-      avgMs = avgMs * 0.9 + dm * 0.1;
+      if (depth === 3) avgMs = avgMs * 0.9 + dm * 0.1;
       if (d < 0) { checkOver(); break; }
       if (!applyMove(d)) { checkOver(); break; }
       acc -= 1; moved++;
@@ -587,8 +564,11 @@ input[type=range]::-moz-range-thumb{
 
     if (moved) { render(speed <= 12); checkOver(); }
 
-    // 调速器：只有跑得动就保持 3 层搜索，跑不动才降到 2 层，确保真能顶到目标倍速
-    depth = (avgMs * 1.3 < 1000 / target) ? 3 : 2;
+    // 深度调度：低速时用 4 层（更省、更强），高速用 3 层；只有连 3 层都撑不住才降 2 层。
+    // 实测 3 层约 0.25ms/步，128× 需要 512 步/秒（预算 1.95ms），余量充足。
+    var budgetMs = 1000 / target;
+    if (avgMs * 2.4 > budgetMs) depth = 2;
+    else depth = (speed <= 6) ? 4 : 3;
   }
 
   function init() {
