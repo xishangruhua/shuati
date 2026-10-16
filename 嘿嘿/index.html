@@ -530,13 +530,25 @@
   </style>
 
   <!-- Three.js v0.160.0 via ES Module ImportMap -->
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-      }
-    }
+  <script>
+    // 线上直接使用站内自带的 three.js（不依赖 CDN）；本机 file:// 双击预览时改用 CDN，
+    // 因为相对路径的 ES module 在 file:// 协议下会被浏览器 CORS 拦截。
+    (function () {
+      const isFile = location.protocol === 'file:';
+      const imports = isFile
+        ? {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.min.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+          }
+        : {
+            "three": "./three/three.module.min.js",
+            "three/addons/": "./three/addons/"
+          };
+      const s = document.createElement('script');
+      s.type = 'importmap';
+      s.textContent = JSON.stringify({ imports });
+      document.head.appendChild(s);
+    })();
   </script>
   <style id="fixed-params">
     /* 界面元素全部隐藏：只保留 3D 场景、悬停提示与剧情字幕 */
