@@ -977,6 +977,8 @@
         mat.questions.forEach(function(q,i){
           q._uid=mat.id+"#"+i;
           q._matId=mat.id;
+          // 「AI 补答」之类的占位说明不算解析，直接不显示
+          if(q.explanation&&/AI\s*补答|原始文件未提供答案/.test(q.explanation))q.explanation="";
           if(q.answer.length===1)mat.singleQ.push(q);
           else mat.multiQ.push(q);
         });
