@@ -83,7 +83,6 @@
       if(!wc){alert("还没有错题～");return}
       startWrongbook();
     });
-    $("eat-entry").innerHTML='<a href="eat.html" class="eat-entry-card">吃啥 — 今天吃什么</a>';
   }
 
   var currentMat=null, currentPool=null, currentType=null;
