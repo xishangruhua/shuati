@@ -4,7 +4,873 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>刷题</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+    :root {
+      /* 保留原版绿色背景与主色 */
+      --bg: #e2efe5;
+      --bg-grad-1: #dcefe2;
+      --bg-grad-2: #e6f1e9;
+      --accent: #2f9e6f;
+      --accent-light: #43b787;
+      --accent-soft: rgba(47, 158, 111, 0.13);
+
+      /* Liquid Glass 光学参数 */
+      --fg: #18221d;
+      --muted: #6c7c73;
+      --correct: #d8000c;
+      --right: #189657;
+      --wrong: #d8000c;
+
+      --lg-blur: 14px;
+      --lg-saturate: 155%;
+      --lg-brightness: 102%;
+      --lg-inner-glow: 0.78;
+      --lg-border-alpha: 0.08;
+      --lg-shadow-alpha: 0.13;
+      --lg-groove-alpha: 0.075;
+
+      --lg-glass-shadow:
+        inset 0 2px 1.5px 0 rgba(255, 255, 255, var(--lg-inner-glow)),
+        inset 1.5px 0 1.5px 0 rgba(255, 255, 255, calc(var(--lg-inner-glow) * 0.8)),
+        inset -1.5px -2px 3px 0 rgba(24, 48, 34, 0.05),
+        0 0 0 1px rgba(24, 48, 34, var(--lg-border-alpha)),
+        0 14px 32px -6px rgba(24, 48, 34, var(--lg-shadow-alpha)),
+        0 4px 12px -2px rgba(24, 48, 34, calc(var(--lg-shadow-alpha) * 0.5));
+
+      --lg-spring: cubic-bezier(0.32, 1.2, 0.54, 1);
+      --lg-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --radius: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(160deg, var(--bg-grad-1), var(--bg-grad-2));
+      background-attachment: fixed;
+      color: var(--fg);
+      font-family: "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* 极柔和的环境光斑，增强毛玻璃层折射层次且不改变绿色基调 */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(520px circle at 15% 12%, rgba(255, 255, 255, 0.45) 0%, transparent 70%),
+        radial-gradient(600px circle at 85% 78%, rgba(67, 183, 135, 0.14) 0%, transparent 70%);
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 28px 18px 64px;
+      min-height: 100vh;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* 通用液态玻璃面板基类 */
+    .lg-glass {
+      --mx: 50%;
+      --my: 15%;
+      background:
+        radial-gradient(260px circle at var(--mx) var(--my), rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 68%),
+        linear-gradient(
+          145deg,
+          rgba(255, 255, 255, 0.68) 0%,
+          rgba(244, 249, 246, 0.48) 55%,
+          rgba(235, 244, 239, 0.56) 100%
+        );
+      backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+      -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+      box-shadow: var(--lg-glass-shadow);
+      transform: translateZ(0);
+    }
+
+    /* 首页标题 */
+    .title {
+      text-align: center;
+      font-size: 2.7rem;
+      font-weight: 700;
+      letter-spacing: 0.3em;
+      margin: 30px 0 8px;
+      color: #1c2b23;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--accent);
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin: 0 0 38px;
+      letter-spacing: 0.04em;
+    }
+
+    .section-label {
+      font-size: 1.02rem;
+      font-weight: 600;
+      margin: 24px 0 14px;
+      color: #314239;
+      padding-left: 4px;
+    }
+
+    /* 资料卡片列表 */
+    .material-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .material-card {
+      --mx: 50%;
+      --my: 15%;
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      cursor: pointer;
+      background:
+        radial-gradient(240px circle at var(--mx) var(--my), rgba(255, 255, 255, 0.72) 0%, rgba(255, 255, 255, 0) 65%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.7) 0%, rgba(243, 248, 245, 0.5) 55%, rgba(235, 244, 239, 0.58) 100%);
+      backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate));
+      -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate));
+      box-shadow: var(--lg-glass-shadow);
+      transform: translateZ(0);
+      transition:
+        transform 260ms var(--lg-bounce),
+        box-shadow 260ms var(--lg-spring);
+    }
+
+    .material-card:hover {
+      transform: translateY(-3px) scale(1.005);
+      box-shadow:
+        inset 0 2px 2px 0 rgba(255, 255, 255, 0.9),
+        inset 1.5px 0 1.5px 0 rgba(255, 255, 255, 0.72),
+        inset -1.5px -2px 3px 0 rgba(24, 48, 34, 0.05),
+        0 0 0 1px rgba(47, 158, 111, 0.22),
+        0 18px 36px -6px rgba(24, 48, 34, 0.16),
+        0 6px 14px -2px rgba(24, 48, 34, 0.08);
+    }
+
+    .material-card:active {
+      transform: scale(0.98) translateY(1px);
+    }
+
+    .material-card .mc-name {
+      font-size: 1.14rem;
+      font-weight: 700;
+      color: #1e2b24;
+    }
+
+    .material-card .mc-meta {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    /* 内凹玻璃进度槽 */
+    .material-card .progress-bar {
+      height: 8px;
+      background: rgba(24, 48, 34, var(--lg-groove-alpha));
+      box-shadow:
+        inset 0 1.5px 2.5px rgba(24, 48, 34, 0.12),
+        0 1px 0 rgba(255, 255, 255, 0.65);
+      border-radius: 999px;
+      margin-top: 13px;
+      overflow: hidden;
+      padding: 1px;
+    }
+
+    .material-card .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent-light), var(--accent));
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.55),
+        0 1px 4px rgba(47, 158, 111, 0.35);
+      transition: width 420ms var(--lg-spring);
+    }
+
+    .material-card .progress-text {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* 错题集水滴入口卡片 */
+    .wrongbook-entry {
+      margin-top: 22px;
+    }
+
+    .wrongbook-card {
+      border-radius: var(--radius);
+      padding: 15px 20px;
+      cursor: pointer;
+      text-align: center;
+      color: #2c3d34;
+      font-weight: 600;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.58), rgba(238, 246, 241, 0.42));
+      backdrop-filter: blur(10px) saturate(140%);
+      -webkit-backdrop-filter: blur(10px) saturate(140%);
+      box-shadow:
+        inset 0 1.5px 1.5px rgba(255, 255, 255, 0.75),
+        inset -1px -1.5px 2px rgba(24, 48, 34, 0.04),
+        0 0 0 1px rgba(24, 48, 34, 0.08),
+        0 8px 20px -4px rgba(24, 48, 34, 0.09);
+      transition: transform 240ms var(--lg-bounce), box-shadow 240ms var(--lg-spring);
+    }
+
+    .wrongbook-card:hover {
+      transform: translateY(-2px);
+      color: var(--accent);
+      box-shadow:
+        inset 0 2px 1.5px rgba(255, 255, 255, 0.85),
+        0 0 0 1px rgba(47, 158, 111, 0.22),
+        0 12px 26px -4px rgba(24, 48, 34, 0.13);
+    }
+
+    .wrongbook-card:active {
+      transform: scale(0.97) translateY(1px);
+    }
+
+    /* 返回胶囊按钮 */
+    .back {
+      text-decoration: none;
+      color: #46574e;
+      font-size: 0.92rem;
+      cursor: pointer;
+      padding: 7px 14px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.52);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow:
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.78),
+        0 0 0 1px rgba(24, 48, 34, 0.07),
+        0 3px 8px rgba(24, 48, 34, 0.06);
+      transition: transform 200ms var(--lg-bounce), color 180ms, background 180ms;
+    }
+
+    .back:hover {
+      color: var(--accent);
+      background: rgba(255, 255, 255, 0.78);
+      transform: translateY(-1px);
+    }
+
+    .back:active {
+      transform: scale(0.95) translateY(1px);
+    }
+
+    /* 翠绿水滴主按钮 */
+    .primary-btn {
+      display: inline-block;
+      text-decoration: none;
+      text-align: center;
+      background: linear-gradient(150deg, #38b37f 0%, #2a9668 100%);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      padding: 13px 32px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+      font-family: inherit;
+      box-shadow:
+        inset 0 1.5px 1.5px rgba(255, 255, 255, 0.48),
+        inset 0 -2px 3px rgba(15, 70, 45, 0.22),
+        0 8px 20px -3px rgba(47, 158, 111, 0.38),
+        0 2px 6px rgba(47, 158, 111, 0.2);
+      transition: transform 220ms var(--lg-bounce), box-shadow 220ms var(--lg-spring), filter 180ms;
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.04);
+      color: #fff;
+      box-shadow:
+        inset 0 2px 1.5px rgba(255, 255, 255, 0.56),
+        inset 0 -2px 3px rgba(15, 70, 45, 0.25),
+        0 12px 24px -3px rgba(47, 158, 111, 0.44);
+    }
+
+    .primary-btn:active {
+      transform: scale(0.95) translateY(1px);
+    }
+
+    /* 模式选择页 */
+    #mode {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mode-center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 68vh;
+      padding-top: 3vh;
+    }
+
+    .mode-title {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #1e2b24;
+      text-align: center;
+      margin: 0 0 4px;
+    }
+
+    .mode-cheer {
+      text-align: center;
+      color: var(--accent);
+      font-size: 0.95rem;
+      font-weight: 500;
+      margin: 0 0 22px;
+    }
+
+    .mode-buttons {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      margin: 16px 0;
+    }
+
+    /* 单选/多选水滴玻璃卡片按钮 */
+    .mode-btn, .type-btn {
+      width: auto;
+      min-width: 158px;
+      padding: 18px 26px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(241, 247, 243, 0.52));
+      backdrop-filter: blur(12px) saturate(150%);
+      -webkit-backdrop-filter: blur(12px) saturate(150%);
+      cursor: pointer;
+      color: #24332b;
+      box-shadow: var(--lg-glass-shadow);
+      transition: transform 240ms var(--lg-bounce), box-shadow 240ms var(--lg-spring), background 220ms;
+      text-align: center;
+      font-family: inherit;
+    }
+
+    .type-btn .type-num {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 500;
+      margin-top: 3px;
+    }
+
+    .mode-btn:hover, .type-btn:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        inset 0 2px 1.5px rgba(255, 255, 255, 0.88),
+        0 0 0 1px rgba(47, 158, 111, 0.25),
+        0 16px 32px -6px rgba(24, 48, 34, 0.15);
+    }
+
+    .type-btn.active {
+      background: linear-gradient(145deg, #38b37f 0%, #2a9668 100%);
+      color: #fff;
+      box-shadow:
+        inset 0 2px 1.5px rgba(255, 255, 255, 0.5),
+        inset 0 -2px 3px rgba(15, 70, 45, 0.2),
+        0 10px 24px -4px rgba(47, 158, 111, 0.4);
+    }
+
+    .type-btn.active .type-num {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .mode-btn:active, .type-btn:active {
+      transform: scale(0.95) translateY(1px);
+    }
+
+    /* 题型设置玻璃浮层面板 */
+    .type-setup, .test-setup {
+      --mx: 50%;
+      --my: 15%;
+      margin-top: 18px;
+      text-align: center;
+      border-radius: 24px;
+      padding: 24px 22px;
+      width: 100%;
+      max-width: 410px;
+      background:
+        radial-gradient(240px circle at var(--mx) var(--my), rgba(255, 255, 255, 0.68) 0%, rgba(255, 255, 255, 0) 68%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.72) 0%, rgba(243, 248, 245, 0.52) 60%, rgba(235, 244, 239, 0.6) 100%);
+      backdrop-filter: blur(16px) saturate(160%);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      box-shadow: var(--lg-glass-shadow);
+      animation: lgPanelPop 320ms var(--lg-spring);
+    }
+
+    @keyframes lgPanelPop {
+      from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Liquid Glass 内凹轨道 + 白色滑动胶囊切换器 */
+    .sub-mode-row {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 4px;
+      border-radius: 14px;
+      background: rgba(24, 48, 34, var(--lg-groove-alpha));
+      box-shadow:
+        inset 0 1.5px 3px rgba(24, 48, 34, 0.1),
+        0 1px 0 rgba(255, 255, 255, 0.72);
+      margin: 0 auto 20px;
+      max-width: 240px;
+    }
+
+    .seg-glider {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      left: 4px;
+      width: calc(50% - 4px);
+      border-radius: 10px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(246, 250, 248, 0.88) 100%);
+      box-shadow:
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.95),
+        0 2px 8px rgba(24, 48, 34, 0.12),
+        0 0 0 1px rgba(24, 48, 34, 0.05);
+      transition: transform 280ms var(--lg-bounce);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .sub-mode-row[data-active="shuffle"] .seg-glider {
+      transform: translate3d(100%, 0, 0);
+    }
+
+    .sub-mode-btn {
+      position: relative;
+      z-index: 1;
+      padding: 8px 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      cursor: pointer;
+      color: #5b6b62;
+      font-family: inherit;
+      transition: color 200ms ease;
+    }
+
+    .sub-mode-btn.active {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .sub-mode-btn:hover:not(.active) {
+      color: #293830;
+    }
+
+    .sub-panel {
+      margin-bottom: 14px;
+    }
+
+    .slider-label {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #2a3a32;
+      margin-bottom: 10px;
+    }
+
+    .slider-label .total-hint {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 400;
+    }
+
+    .slider-double {
+      margin-bottom: 16px;
+    }
+
+    /* 自定义液态玻璃滑块 Range */
+    .type-setup input[type=range],
+    .test-setup input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      max-width: 350px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(24, 48, 34, 0.09);
+      box-shadow:
+        inset 0 1.5px 2.5px rgba(24, 48, 34, 0.12),
+        0 1px 0 rgba(255, 255, 255, 0.7);
+      outline: none;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .type-setup input[type=range]::-webkit-slider-thumb,
+    .test-setup input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffffff 0%, #eef5f1 75%);
+      box-shadow:
+        inset 0 1.5px 1.5px #ffffff,
+        0 2px 6px rgba(24, 48, 34, 0.24),
+        0 0 0 2px var(--accent);
+      cursor: pointer;
+      transition: transform 180ms var(--lg-bounce);
+    }
+
+    .type-setup input[type=range]::-webkit-slider-thumb:active,
+    .test-setup input[type=range]::-webkit-slider-thumb:active {
+      transform: scale(1.16);
+    }
+
+    .total-hint {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-bottom: 16px;
+    }
+
+    .type-setup .primary-btn,
+    .test-setup .primary-btn {
+      margin-top: 6px;
+      width: 100%;
+      max-width: 240px;
+    }
+
+    /* 答题页 */
+    .quiz-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .quiz-top .back {
+      flex-shrink: 0;
+    }
+
+    .quiz-progress, .quiz-score {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #46594f;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.48);
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.75),
+        0 0 0 1px rgba(24, 48, 34, 0.06);
+    }
+
+    /* 答题主玻璃面板 */
+    .quiz-body {
+      --mx: 50%;
+      --my: 12%;
+      text-align: center;
+      padding: 34px 24px;
+      min-height: 52vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-radius: 26px;
+      background:
+        radial-gradient(320px circle at var(--mx) var(--my), rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 68%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.74) 0%, rgba(245, 249, 247, 0.56) 55%, rgba(237, 245, 240, 0.64) 100%);
+      backdrop-filter: blur(16px) saturate(160%);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+      box-shadow: var(--lg-glass-shadow);
+    }
+
+    .locate-hint {
+      display: inline-block;
+      margin: 0 auto 14px;
+      padding: 3px 12px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(47, 158, 111, 0.1);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      min-height: 1.4em;
+    }
+
+    .question-stem {
+      font-size: 1.45rem;
+      font-weight: 700;
+      line-height: 1.68;
+      margin-bottom: 28px;
+      color: #1b2821;
+    }
+
+    /* 选项水滴玻璃卡片 */
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+      align-items: center;
+    }
+
+    .option {
+      width: 100%;
+      max-width: 540px;
+      padding: 16px 20px;
+      font-size: 1.12rem;
+      border: none;
+      border-radius: 16px;
+      cursor: pointer;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.85), rgba(246, 250, 248, 0.68));
+      text-align: left;
+      color: #223029;
+      font-family: inherit;
+      box-shadow:
+        inset 0 1.5px 1.5px rgba(255, 255, 255, 0.9),
+        inset -1px -1.5px 2px rgba(24, 48, 34, 0.04),
+        0 0 0 1px rgba(24, 48, 34, 0.08),
+        0 4px 12px -2px rgba(24, 48, 34, 0.07);
+      transition: transform 220ms var(--lg-bounce), box-shadow 220ms var(--lg-spring), background 180ms;
+    }
+
+    .option:hover:not(.disabled) {
+      transform: translateY(-2px);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(248, 252, 250, 0.82));
+      box-shadow:
+        inset 0 2px 1.5px rgba(255, 255, 255, 0.95),
+        0 0 0 1px rgba(47, 158, 111, 0.28),
+        0 8px 18px -3px rgba(24, 48, 34, 0.11);
+    }
+
+    .option:active:not(.disabled) {
+      transform: scale(0.98) translateY(1px);
+    }
+
+    .option .opt-key {
+      font-weight: 700;
+      margin-right: 10px;
+      color: var(--accent);
+    }
+
+    .option.selected {
+      background: linear-gradient(145deg, rgba(227, 245, 235, 0.92), rgba(214, 240, 226, 0.82));
+      box-shadow:
+        inset 0 1.5px 1.5px rgba(255, 255, 255, 0.85),
+        0 0 0 1.5px var(--accent),
+        0 6px 16px -2px rgba(47, 158, 111, 0.18);
+    }
+
+    .option.chosen-right,
+    .option.show-correct {
+      background: linear-gradient(145deg, rgba(226, 248, 236, 0.95), rgba(212, 243, 226, 0.86));
+      color: var(--right);
+      font-weight: 600;
+      box-shadow:
+        inset 0 1.5px 1.5px rgba(255, 255, 255, 0.85),
+        0 0 0 1.5px var(--right),
+        0 6px 16px -2px rgba(24, 150, 87, 0.18);
+    }
+
+    .option.chosen-wrong {
+      background: linear-gradient(145deg, rgba(254, 234, 234, 0.95), rgba(252, 222, 222, 0.86));
+      color: var(--wrong);
+      font-weight: 600;
+      box-shadow:
+        inset 0 1.5px 1.5px rgba(255, 255, 255, 0.85),
+        0 0 0 1.5px var(--wrong),
+        0 6px 16px -2px rgba(216, 0, 12, 0.15);
+    }
+
+    .option.disabled {
+      cursor: default;
+    }
+
+    .feedback {
+      margin-top: 22px;
+      font-size: 1.08rem;
+      font-weight: 700;
+      min-height: 1.4em;
+    }
+
+    .feedback.right {
+      color: var(--right);
+    }
+
+    .feedback.wrong {
+      color: var(--wrong);
+    }
+
+    .explanation {
+      margin: 16px auto 0;
+      max-width: 540px;
+      text-align: left;
+      background: rgba(235, 248, 241, 0.72);
+      box-shadow:
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.8),
+        0 0 0 1px rgba(47, 158, 111, 0.2);
+      border-radius: 16px;
+      padding: 15px 18px;
+      font-size: 0.95rem;
+      color: #2b4236;
+      line-height: 1.7;
+    }
+
+    /* 底部导航水滴按钮 */
+    .quiz-nav {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 20px;
+      align-items: center;
+    }
+
+    .nav-btn {
+      flex: 1;
+      padding: 13px 0;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.72), rgba(242, 248, 244, 0.52));
+      backdrop-filter: blur(10px) saturate(145%);
+      -webkit-backdrop-filter: blur(10px) saturate(145%);
+      cursor: pointer;
+      color: #2d3e35;
+      font-family: inherit;
+      box-shadow:
+        inset 0 1.5px 1.5px rgba(255, 255, 255, 0.82),
+        0 0 0 1px rgba(24, 48, 34, 0.08),
+        0 6px 16px -3px rgba(24, 48, 34, 0.1);
+      transition: transform 220ms var(--lg-bounce), box-shadow 220ms var(--lg-spring), opacity 180ms;
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.38;
+      cursor: default;
+    }
+
+    .nav-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      color: var(--accent);
+      box-shadow:
+        inset 0 2px 1.5px rgba(255, 255, 255, 0.9),
+        0 0 0 1px rgba(47, 158, 111, 0.24),
+        0 10px 22px -3px rgba(24, 48, 34, 0.14);
+    }
+
+    .nav-btn:active:not(:disabled) {
+      transform: scale(0.96) translateY(1px);
+    }
+
+    /* 测试结果页 */
+    #result {
+      text-align: center;
+    }
+
+    .result-card {
+      margin: 28px auto 0;
+      max-width: 440px;
+      padding: 34px 24px;
+      border-radius: 26px;
+    }
+
+    .result-score {
+      text-align: center;
+      font-size: 3.4rem;
+      font-weight: 700;
+      margin: 12px 0 10px;
+      color: var(--accent);
+      text-shadow: 0 2px 10px rgba(47, 158, 111, 0.18);
+    }
+
+    .result-detail {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+
+    #result-back {
+      display: block;
+      width: 210px;
+      margin: 0 auto;
+      padding: 14px 0;
+      font-size: 1.05rem;
+    }
+
+    .redo-btn {
+      display: block;
+      margin: 12px auto 0;
+      padding: 7px 18px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.56);
+      box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.8),
+        0 0 0 1px rgba(24, 48, 34, 0.08);
+      cursor: pointer;
+      color: var(--muted);
+      font-family: inherit;
+      transition: transform 200ms var(--lg-bounce), color 180ms;
+    }
+
+    .redo-btn:hover {
+      color: var(--accent);
+      transform: translateY(-1px);
+    }
+
+    .redo-btn:active {
+      transform: scale(0.95);
+    }
+
+    .empty-tip {
+      text-align: center;
+      padding: 24px 20px;
+      border-radius: var(--radius);
+      color: #3a4f44;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 600px) {
+      .title { font-size: 2.2rem; }
+      .question-stem { font-size: 1.26rem; }
+      .option { font-size: 1.04rem; padding: 14px 16px; }
+      .mode-btn, .type-btn { padding: 18px 20px; font-size: 1.05rem; min-width: 142px; }
+      .quiz-body { padding: 26px 15px; }
+    }
+  </style>
 </head>
 <body>
   <div id="app">
@@ -19,7 +885,7 @@
 
     <!-- 模式选择 -->
     <section id="mode" class="screen hidden">
-      <a class="back" href="index.html">← 返回</a>
+      <a class="back" href="#" data-go-home>← 返回</a>
       <div class="mode-center">
         <h2 id="mode-title" class="mode-title"></h2>
         <p class="mode-cheer" id="mode-cheer">加油呀！祝你稳稳过</p>
@@ -28,8 +894,9 @@
           <button class="mode-btn type-btn" data-type="multi">多选题 <span class="type-num"></span></button>
         </div>
         <!-- 题型设置区 -->
-        <div id="type-setup" class="type-setup hidden">
-          <div class="sub-mode-row">
+        <div id="type-setup" class="type-setup lg-glass hidden">
+          <div class="sub-mode-row" data-active="seq">
+            <div class="seg-glider"></div>
             <button class="sub-mode-btn active" data-sub="seq">顺序</button>
             <button class="sub-mode-btn" data-sub="shuffle">打乱</button>
           </div>
@@ -59,13 +926,13 @@
     <!-- 答题页 -->
     <section id="quiz" class="screen hidden">
       <div class="quiz-top">
-        <a class="back" href="index.html">← 返回</a>
+        <a class="back" href="#" data-go-home>← 返回</a>
         <span id="quiz-progress" class="quiz-progress"></span>
         <span id="quiz-score" class="quiz-score"></span>
       </div>
 
       <!-- 选择题/判断题 布局 -->
-      <div id="quiz-choice" class="quiz-body">
+      <div id="quiz-choice" class="quiz-body lg-glass">
         <div id="locate-hint" class="locate-hint"></div>
         <div id="question-stem" class="question-stem"></div>
         <div id="options" class="options"></div>
@@ -82,17 +949,388 @@
 
     <!-- 测试结果页 -->
     <section id="result" class="screen hidden">
-      <h2 class="section-label">测试结束</h2>
-      <div id="result-score" class="result-score"></div>
-      <div id="result-detail" class="result-detail"></div>
-      <div class="mode-buttons">
-        <a class="primary-btn" id="result-back" href="#">返回</a>
+      <div class="result-card lg-glass">
+        <h2 class="section-label">测试结束</h2>
+        <div id="result-score" class="result-score"></div>
+        <div id="result-detail" class="result-detail"></div>
+        <div class="mode-buttons">
+          <a class="primary-btn" id="result-back" href="#">返回</a>
+        </div>
+        <button id="redo-btn" class="redo-btn hidden">重做</button>
       </div>
-      <button id="redo-btn" class="redo-btn hidden">重做</button>
     </section>
   </div>
 
+  <!-- 外部题库文件（保持与 questions.js 同级目录即可自动读取） -->
   <script src="questions.js"></script>
-  <script src="app.js"></script>
+  <script>
+    /* 刷题 2.0 — Liquid Glass Single-File Edition */
+    (function(){
+      "use strict";
+      var BANK=(window.QUESTION_BANK&&window.QUESTION_BANK.materials)||[];
+      var LS_KEY="shuati_history_v1";
+      var MASTER_TARGET=3;
+
+      BANK.forEach(function(mat){
+        mat.singleQ=[];
+        mat.multiQ=[];
+        mat.questions.forEach(function(q,i){
+          q._uid=mat.id+"#"+i;
+          q._matId=mat.id;
+          if(q.answer.length===1)mat.singleQ.push(q);
+          else mat.multiQ.push(q);
+        });
+      });
+
+      function loadStore(){try{return JSON.parse(localStorage.getItem(LS_KEY))||{}}catch(e){return{}}}
+      function saveStore(s){localStorage.setItem(LS_KEY,JSON.stringify(s))}
+      var store=loadStore();
+      store.materials=store.materials||{};
+      store.wrong=store.wrong||{};
+      store.resume=store.resume||{};
+      store.seqPos=store.seqPos||{};
+
+      function matState(k){
+        if(!store.materials[k])store.materials[k]={mastery:{},scoreAvg:null,tests:0};
+        var st=store.materials[k];
+        if(!st.mastery)st.mastery={};
+        if(st.scoreAvg===undefined)st.scoreAvg=null;
+        if(st.tests===undefined)st.tests=0;
+        return st;
+      }
+
+      function $(id){return document.getElementById(id)}
+      function show(s){
+        ["home","mode","quiz","result"].forEach(function(sn){$(sn).classList.toggle("hidden",sn!==s)});
+        window.scrollTo(0,0);
+      }
+      function shuffle(a){var r=a.slice();for(var i=r.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=r[i];r[i]=r[j];r[j]=t}return r}
+      function answerSet(q){return q.answer.slice().sort()}
+      function arrEq(a,b){if(a.length!==b.length)return false;for(var i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true}
+      function optionEntries(q){return Object.keys(q.options).map(function(k){return{key:k,text:q.options[k]}})}
+
+      function computeMatProgress(mat){
+        var allQ=mat.questions;
+        if(!allQ.length)return 0;
+        var st=matState(mat.id),sum=0,attempted=0;
+        allQ.forEach(function(q){
+          var m=st.mastery[q._uid]||0;
+          if(m>0)attempted++;
+          sum+=Math.min(m,MASTER_TARGET);
+        });
+        var mr=sum/(allQ.length*MASTER_TARGET);
+        var cov=attempted/allQ.length;
+        var sa=st.scoreAvg==null?0:st.scoreAvg;
+        return Math.round((mr*0.5+sa*cov*0.5)*100);
+      }
+
+      function renderHome(){
+        var list=$("material-list");list.innerHTML="";
+        BANK.forEach(function(mat){
+          var pct=computeMatProgress(mat);
+          var card=document.createElement("div");card.className="material-card lg-glass";
+          var sc=mat.singleQ.length,mc=mat.multiQ.length;
+          var tn=sc&&mc?"单选 + 多选":mc?"多选题":"单选题";
+          var meta=tn+" · 共 "+(sc+mc)+" 题"+
+            (sc&&mc?"（单选"+sc+" 多选"+mc+"）":"")+
+            '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
+            '<div class="progress-text">进度 '+pct+'%</div>';
+          card.innerHTML='<div class="mc-name">'+mat.title+'</div><div class="mc-meta">'+meta+'</div>';
+          card.addEventListener("click",function(){openMaterial(mat)});
+          list.appendChild(card);
+        });
+        var wc=Object.keys(store.wrong).length;
+        $("wrongbook-entry").innerHTML='<div class="wrongbook-card">错题集（'+wc+' 题）</div>';
+        $("wrongbook-entry").querySelector(".wrongbook-card").addEventListener("click",function(){
+          if(!wc){alert("还没有错题～");return}
+          startWrongbook();
+        });
+      }
+
+      var currentMat=null, currentPool=null, currentType=null;
+      function openMaterial(mat){
+        currentMat=mat;
+        $("mode-title").textContent=mat.title;
+        $("mode-cheer").textContent="加油呀！祝你稳稳过";
+        var sc=mat.singleQ.length, mc=mat.multiQ.length;
+        var btns=$("mode-buttons-box");
+        btns.querySelector('[data-type="single"] .type-num').textContent=sc+" 题";
+        btns.querySelector('[data-type="multi"] .type-num').textContent=mc+" 题";
+        btns.querySelectorAll('.type-btn').forEach(function(b){b.classList.remove("active")});
+        if(!sc)btns.querySelector('[data-type="single"]').style.opacity='.35';
+        else btns.querySelector('[data-type="single"]').style.opacity='1';
+        if(!mc)btns.querySelector('[data-type="multi"]').style.opacity='.35';
+        else btns.querySelector('[data-type="multi"]').style.opacity='1';
+        $("type-setup").classList.add("hidden");
+        show("mode");
+      }
+
+      $("mode-buttons-box").addEventListener("click", function(e){
+        var btn=e.target.closest(".type-btn"); if(!btn)return;
+        var type=btn.dataset.type;
+        if(!currentMat)return;
+        var pool=type==="single"?currentMat.singleQ:currentMat.multiQ;
+        if(!pool.length){alert(type==="single"?"该资料没有单选题":"该资料没有多选题");return}
+        this.querySelectorAll('.type-btn').forEach(function(b){b.classList.remove("active")});
+        btn.classList.add("active");
+        currentPool=pool; currentType=type;
+        showTypeSetup(pool);
+      });
+
+      function showTypeSetup(pool){
+        $("type-setup").classList.remove("hidden");
+        var total=pool.length;
+        var posKey=currentMat.id+"_"+currentType;
+        var savedFrom=(store.seqPos[posKey]||0)+1;
+        var fromVal=savedFrom>total?1:savedFrom;
+        var toVal=Math.min(fromVal+19,total);
+        $("seq-from").max=total;$("seq-to").max=total;
+        $("seq-from").value=fromVal;$("seq-to").value=toVal;
+        $("seq-from-val").textContent=fromVal;$("seq-to-val").textContent=toVal;
+        $("seq-total").textContent=total;
+
+        var def=Math.min(20,total);
+        $("shuffle-count").max=total;
+        $("shuffle-count").value=def;
+        $("shuffle-val").textContent=def;
+        $("shuffle-total").textContent=total;
+        $("shuffle-ratio").textContent="";
+
+        $("seq-panel").classList.remove("hidden");
+        $("shuffle-panel").classList.add("hidden");
+        var row=document.querySelector(".sub-mode-row");
+        if(row)row.dataset.active="seq";
+        document.querySelectorAll(".sub-mode-btn").forEach(function(b){b.classList.toggle("active",b.dataset.sub==="seq")});
+      }
+
+      document.querySelector(".sub-mode-row").addEventListener("click", function(e){
+        var btn=e.target.closest(".sub-mode-btn"); if(!btn)return;
+        this.querySelectorAll('.sub-mode-btn').forEach(function(b){b.classList.remove("active")});
+        btn.classList.add("active");
+        var sub=btn.dataset.sub;
+        this.dataset.active=sub;
+        $("seq-panel").classList.toggle("hidden", sub!=="seq");
+        $("shuffle-panel").classList.toggle("hidden", sub!=="shuffle");
+      });
+
+      $("start-type").addEventListener("click", function(){
+        if(!currentPool||!currentMat)return;
+        var sub=document.querySelector(".sub-mode-btn.active").dataset.sub;
+        var list;
+        if(sub==="seq"){
+          var from=parseInt($("seq-from").value,10)-1;
+          var to=parseInt($("seq-to").value,10);
+          if(from>=to){alert("起始题号需小于结束题号");return}
+          list=currentPool.slice(from,to);
+        }else{
+          var count=parseInt($("shuffle-count").value,10);
+          list=shuffle(currentPool.slice()).slice(0,Math.min(count,currentPool.length));
+        }
+        startTest(currentMat,list);
+      });
+
+      $("seq-from").addEventListener("input",function(){
+        var v=parseInt(this.value,10);
+        $("seq-from-val").textContent=v;
+        var to=Math.min(v+19,parseInt($("seq-to").max,10));
+        $("seq-to").value=to;$("seq-to-val").textContent=to;
+      });
+      $("seq-to").addEventListener("input",function(){$("seq-to-val").textContent=this.value});
+      $("shuffle-count").addEventListener("input",function(){$("shuffle-val").textContent=this.value});
+
+      var session=null;
+
+      function startTest(mat,list){
+        session={mode:"test",mid:mat.id,list:list,idx:0,userAns:{},correctCount:0};
+        show("quiz");renderQuestion();
+      }
+
+      function startWrongbook(){
+        var qs=[];
+        BANK.forEach(function(mat){
+          mat.questions.forEach(function(q){
+            if(store.wrong[q._uid]){q._matTitle=mat.title;qs.push(q)}
+          });
+        });
+        if(!qs.length){alert("还没有错题～");return}
+        var sq=qs.filter(function(q){return q.answer.length===1});
+        var mq=qs.filter(function(q){return q.answer.length>1});
+        var list=shuffle(sq).concat(shuffle(mq));
+        session={mode:"test",mid:null,list:list,idx:0,userAns:{},correctCount:0,isWrongbook:true};
+        show("quiz");renderQuestion();
+      }
+
+      function renderQuestion(){
+        var q=session.list[session.idx];
+        $("quiz-choice").classList.remove("hidden");
+        var isTest=session.mode==="test";
+        $("feedback").textContent="";$("feedback").className="feedback";
+        $("explanation").classList.add("hidden");$("explanation").textContent="";
+        $("submit-btn").classList.add("hidden");
+        $("quiz-progress").textContent=(session.isWrongbook?"错题集 ":"")+(session.idx+1)+" / "+session.list.length;
+        $("quiz-score").textContent=isTest?("已答对 "+session.correctCount):"";
+        $("locate-hint").textContent=q.answer.length>1?"多选题":"单选题";
+        $("question-stem").textContent=q.stem;
+        var box=$("options");box.innerHTML="";
+        var entries=optionEntries(q);
+        var isMulti=q.answer.length>1;
+        entries.forEach(function(e){
+          var el=document.createElement("button");
+          el.className="option";
+          el.innerHTML='<span class="opt-key">'+e.key+".</span>"+e.text;
+          el.dataset.key=e.key;
+          if(isTest){
+            el.addEventListener("click",function(){onChoose(q,e.key,el,isMulti)});
+          }
+          box.appendChild(el);
+        });
+        if(isTest&&isMulti&&!session.userAns[q._uid]){$("submit-btn").classList.remove("hidden");session._multiSel=[]}
+        if(isTest&&session.userAns[q._uid])revealResult(q,session.userAns[q._uid]);
+        $("prev-btn").disabled=session.idx===0;
+        $("next-btn").textContent=session.idx===session.list.length-1?"完成":"下一道 →";
+      }
+
+      function onChoose(q,key,el,isMulti){
+        if(session.userAns[q._uid])return;
+        if(isMulti){el.classList.toggle("selected");var i=session._multiSel.indexOf(key);
+          if(i>=0)session._multiSel.splice(i,1);else session._multiSel.push(key);return}
+        judge(q,[key]);
+      }
+
+      $("submit-btn").addEventListener("click",function(){
+        var q=session.list[session.idx];
+        if(!session._multiSel||!session._multiSel.length){alert("请至少选择一项");return}
+        judge(q,session._multiSel.slice());
+      });
+
+      function judge(q,chosen){
+        var correct=answerSet(q);
+        var ok=arrEq(chosen.slice().sort(),correct);
+        session.userAns[q._uid]={chosen:chosen,ok:ok};
+        if(ok)session.correctCount++;
+        if(session.isWrongbook){
+          var storeKey=q._matId||session.mid;
+          if(storeKey){
+            var st=matState(storeKey);
+            var cur=st.mastery[q._uid]||0;
+            st.mastery[q._uid]=ok?cur+1:0;
+          }
+          if(ok)delete store.wrong[q._uid];
+          saveStore(store);
+        }else if(session.mid){
+          var st=matState(session.mid);
+          var cur=st.mastery[q._uid]||0;
+          st.mastery[q._uid]=ok?cur+1:0;
+          if(ok)delete store.wrong[q._uid];else store.wrong[q._uid]=true;
+          saveStore(store);
+        }
+        revealResult(q,session.userAns[q._uid]);
+        if(ok){
+          $("submit-btn").classList.add("hidden");
+          setTimeout(function(){
+            if(session.idx<session.list.length-1){session.idx++;renderQuestion()}
+            else finishTest();
+          },550);
+        }
+      }
+
+      function revealResult(q,ans){
+        var correct=answerSet(q);$("submit-btn").classList.add("hidden");
+        Array.prototype.forEach.call($("options").children,function(el){
+          var k=el.dataset.key;el.classList.add("disabled");el.classList.remove("selected");
+          var isC=correct.indexOf(k)>=0,isCh=ans.chosen.indexOf(k)>=0;
+          if(isCh&&isC)el.classList.add("chosen-right");
+          else if(isCh&&!isC)el.classList.add("chosen-wrong");
+          else if(isC)el.classList.add("show-correct");
+        });
+        var fb=$("feedback");
+        if(ans.ok){fb.textContent="✓ 回答正确";fb.className="feedback right"}
+        else{fb.textContent="✗ 回答错误，正确答案："+correct.join("");fb.className="feedback wrong";
+          if(q.explanation&&q.explanation.trim()){
+            $("explanation").textContent=q.explanation;$("explanation").classList.remove("hidden");
+          }}
+      }
+
+      function finishTest(){
+        var total=session.list.length;if(!total)return;
+        var score=Math.round(session.correctCount/total*100);
+        $("result-score").textContent=score+" 分";
+        $("result-detail").textContent="共 "+total+" 题，答对 "+session.correctCount+" 题"
+          +(session.isWrongbook?"　|　剩余错题 "+(Object.keys(store.wrong).length)+" 题":"");
+        if(session.mid){
+          var st=matState(session.mid);
+          var thisScore=session.correctCount/total;
+          st.scoreAvg=(st.scoreAvg==null)?thisScore:(st.scoreAvg*0.6+thisScore*0.4);
+          st.tests=(st.tests||0)+1;
+          var p=computeMatProgress(currentMat||BANK[0]);
+          $("result-detail").textContent+="　|　近期 "+Math.round(st.scoreAvg*100)+"%　|　进度 "+p+"%";
+          if(currentPool&&currentType){
+            var lastQ=session.list[session.list.length-1];
+            var poolIdx=currentPool.indexOf(lastQ);
+            if(poolIdx>=0) store.seqPos[currentMat.id+"_"+currentType]=poolIdx;
+          }
+          saveStore(store);
+        }
+        $("redo-btn").classList.toggle("hidden", total>=100||session.isWrongbook);
+        $("result-back").onclick=function(e){e.preventDefault();
+          if(session.isWrongbook){show("home");return}
+          if(currentPool){showTypeSetup(currentPool)}
+          show("mode");
+        };
+        show("result");
+      }
+
+      $("redo-btn").addEventListener("click", function(){
+        if(!session||!session.list.length)return;
+        session.idx=0;session.userAns={};session.correctCount=0;
+        show("quiz");renderQuestion();
+      });
+
+      $("next-btn").addEventListener("click",function(){
+        if(session&&session.idx<session.list.length-1){session.idx++;renderQuestion()}
+        else if(session&&session.mode==="test")finishTest();
+      });
+      $("prev-btn").addEventListener("click",function(){
+        if(session&&session.idx>0){session.idx--;renderQuestion()}
+      });
+
+      // 无论 HTML 文件被重命名为什么（如 index(1).html），点击“← 返回”都能丝滑回首页
+      window.goHome=function(){renderHome();show("home")};
+      document.querySelectorAll("[data-go-home]").forEach(function(el){
+        el.addEventListener("click", function(e){
+          e.preventDefault();
+          window.goHome();
+        });
+      });
+
+      // Liquid Glass 指针高光跟随（rAF 节流，零布局重排）
+      var hoverTarget=null, pendingX=0, pendingY=0, rafScheduled=false;
+      function updateSpecular(e){
+        var card=e.target.closest(".lg-glass, .material-card");
+        if(!card)return;
+        hoverTarget=card;
+        pendingX=e.clientX;
+        pendingY=e.clientY;
+        if(!rafScheduled){
+          rafScheduled=true;
+          requestAnimationFrame(function(){
+            rafScheduled=false;
+            if(!hoverTarget)return;
+            var rect=hoverTarget.getBoundingClientRect();
+            hoverTarget.style.setProperty("--mx",(pendingX-rect.left)+"px");
+            hoverTarget.style.setProperty("--my",(pendingY-rect.top)+"px");
+          });
+        }
+      }
+      document.addEventListener("pointermove", updateSpecular, {passive:true});
+      document.addEventListener("pointerdown", updateSpecular, {passive:true});
+
+      if(!BANK.length){
+        $("material-list").innerHTML='<div class="lg-glass empty-tip">未读取到题库数据，请将本文件放入与 <b>questions.js</b> 相同的文件夹中再打开。</div>';
+      } else {
+        renderHome();
+      }
+    })();
+  </script>
 </body>
 </html>
